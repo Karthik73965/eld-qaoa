@@ -1,0 +1,49 @@
+{
+  "source": "J. F. Prada (2017), Ensuring the Reliable Operation of the Power Grid, CMU PhD thesis, Appendix D, Tables 30-34 (system adapted from Wood, Wollenberg & Sheble).",
+  "base_mva": 100,
+  "base_mva_note": "Not stated in Appendix D; 100 MVA assumed (Wood & Wollenberg convention).",
+  "load_power_factor": 0.98,
+  "buses": [
+    {"bus": 1, "type": "generation", "vb_kv": 230, "vmax_pu": 1.07, "vmin_pu": 0.95},
+    {"bus": 2, "type": "generation", "vb_kv": 230, "vmax_pu": 1.07, "vmin_pu": 0.95},
+    {"bus": 3, "type": "generation", "vb_kv": 230, "vmax_pu": 1.07, "vmin_pu": 0.95},
+    {"bus": 4, "type": "load", "vb_kv": 230, "vmax_pu": 1.07, "vmin_pu": 0.95},
+    {"bus": 5, "type": "load", "vb_kv": 230, "vmax_pu": 1.07, "vmin_pu": 0.95},
+    {"bus": 6, "type": "load", "vb_kv": 230, "vmax_pu": 1.07, "vmin_pu": 0.95}
+  ],
+  "branches": [
+    {"id": "T01", "from": 1, "to": 2, "r_pu": 0.10, "x_pu": 0.20, "bc_pu": 0.04, "rating_mva": 100, "ste_rating_mva": 125},
+    {"id": "T02", "from": 1, "to": 4, "r_pu": 0.05, "x_pu": 0.20, "bc_pu": 0.04, "rating_mva": 100, "ste_rating_mva": 125},
+    {"id": "T03", "from": 1, "to": 5, "r_pu": 0.08, "x_pu": 0.30, "bc_pu": 0.06, "rating_mva": 100, "ste_rating_mva": 125},
+    {"id": "T04", "from": 2, "to": 3, "r_pu": 0.05, "x_pu": 0.25, "bc_pu": 0.06, "rating_mva": 60, "ste_rating_mva": 75},
+    {"id": "T05", "from": 2, "to": 4, "r_pu": 0.05, "x_pu": 0.10, "bc_pu": 0.02, "rating_mva": 60, "ste_rating_mva": 75},
+    {"id": "T06", "from": 2, "to": 5, "r_pu": 0.10, "x_pu": 0.30, "bc_pu": 0.04, "rating_mva": 60, "ste_rating_mva": 75},
+    {"id": "T07", "from": 2, "to": 6, "r_pu": 0.07, "x_pu": 0.20, "bc_pu": 0.05, "rating_mva": 60, "ste_rating_mva": 75},
+    {"id": "T08", "from": 3, "to": 5, "r_pu": 0.12, "x_pu": 0.26, "bc_pu": 0.05, "rating_mva": 60, "ste_rating_mva": 75},
+    {"id": "T09", "from": 3, "to": 6, "r_pu": 0.02, "x_pu": 0.10, "bc_pu": 0.02, "rating_mva": 60, "ste_rating_mva": 75},
+    {"id": "T10", "from": 4, "to": 5, "r_pu": 0.20, "x_pu": 0.40, "bc_pu": 0.08, "rating_mva": 60, "ste_rating_mva": 75},
+    {"id": "T11", "from": 5, "to": 6, "r_pu": 0.10, "x_pu": 0.30, "bc_pu": 0.06, "rating_mva": 60, "ste_rating_mva": 75}
+  ],
+  "loads_mw": [
+    {"period": 1,  "L4": 84,  "L5": 83,  "L6": 83,  "total": 250},
+    {"period": 2,  "L4": 70,  "L5": 70,  "L6": 70,  "total": 210},
+    {"period": 3,  "L4": 64,  "L5": 63,  "L6": 63,  "total": 190},
+    {"period": 4,  "L4": 60,  "L5": 60,  "L6": 60,  "total": 180},
+    {"period": 5,  "L4": 67,  "L5": 67,  "L6": 66,  "total": 200},
+    {"period": 6,  "L4": 77,  "L5": 77,  "L6": 76,  "total": 230},
+    {"period": 7,  "L4": 90,  "L5": 90,  "L6": 90,  "total": 270},
+    {"period": 8,  "L4": 104, "L5": 103, "L6": 103, "total": 310},
+    {"period": 9,  "L4": 110, "L5": 110, "L6": 110, "total": 330},
+    {"period": 10, "L4": 107, "L5": 107, "L6": 106, "total": 320},
+    {"period": 11, "L4": 100, "L5": 100, "L6": 100, "total": 300},
+    {"period": 12, "L4": 90,  "L5": 90,  "L6": 90,  "total": 270}
+  ],
+  "generators": [
+    {"id": "G1", "bus": 1, "pmin_mw": 50.0, "pmax_mw": 200.0, "qmin_mvar": -100, "qmax_mvar": 150, "ramp_mw_per_h": 90,  "min_up_h": 2, "min_dn_h": 4,
+     "a": 0.00533, "b": 11.669, "c": 213.10, "startup_usd": 300, "reserve_usd_per_mwh": 4.00},
+    {"id": "G2", "bus": 2, "pmin_mw": 37.5, "pmax_mw": 150.0, "qmin_mvar": -100, "qmax_mvar": 150, "ramp_mw_per_h": 150, "min_up_h": 1, "min_dn_h": 1,
+     "a": 0.00889, "b": 10.333, "c": 200.00, "startup_usd": 150, "reserve_usd_per_mwh": 3.00},
+    {"id": "G3", "bus": 3, "pmin_mw": 45.0, "pmax_mw": 180.0, "qmin_mvar": -100, "qmax_mvar": 120, "ramp_mw_per_h": 120, "min_up_h": 2, "min_dn_h": 2,
+     "a": 0.00741, "b": 10.833, "c": 240.00, "startup_usd": 100, "reserve_usd_per_mwh": 3.00}
+  ]
+}

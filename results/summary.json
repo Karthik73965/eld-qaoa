@@ -1,0 +1,33 @@
+{
+  "config": {
+    "n_bits": 4,
+    "qubits": 12,
+    "penalty_A": 20.0,
+    "p_max": 4,
+    "objective": "cvar",
+    "cvar_alpha": 0.05,
+    "shots": 4096,
+    "seed": 7,
+    "refine_top_k": 5
+  },
+  "total_cost_slsqp": 43171.05029285635,
+  "total_cost_qaoa_raw": 43170.071717499995,
+  "total_cost_hybrid": 43173.87730659495,
+  "max_abs_gap_hybrid_pct": 0.040485225305075666,
+  "max_abs_mismatch_qaoa_mw": 0.5,
+  "periods_qaoa_found_qubo_opt": 12,
+  "mean_amp_opt_by_p": {
+    "1": 4.577351789243272,
+    "2": 6.7592029902878705,
+    "3": 8.333621087018072,
+    "4": 10.182483975745889
+  },
+  "mean_amp_good_by_p": {
+    "1": 5.560554826191244,
+    "2": 7.615482638013028,
+    "3": 9.077578269365617,
+    "4": 11.049830927782274
+  },
+  "mean_p_good_pmax": 0.20425081360583017,
+  "mean_p_good_random": 0.030741373697916668
+}
