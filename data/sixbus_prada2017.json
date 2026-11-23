@@ -1,7 +1,7 @@
 {
   "source": "J. F. Prada (2017), Ensuring the Reliable Operation of the Power Grid, CMU PhD thesis, Appendix D, Tables 30-34 (system adapted from Wood, Wollenberg & Sheble).",
   "base_mva": 100,
-  "base_mva_note": "Not stated in Appendix D; 100 MVA assumed (Wood & Wollenberg convention).",
+  "base_mva_note": "Not stated in Prada App. D; taken from MATPOWER case6ww.m (mpc.baseMVA = 100), the digital record of the original Wood & Wollenberg system. See docs/SOURCES.md.",
   "load_power_factor": 0.98,
   "buses": [
     {"bus": 1, "type": "generation", "vb_kv": 230, "vmax_pu": 1.07, "vmin_pu": 0.95},

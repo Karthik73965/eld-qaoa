@@ -1,0 +1,95 @@
+\chapter{Implementation}
+
+\section{Software environment}
+The project is written in Python~3.11.9. Table~\ref{tab:sw} lists the packages; exact versions are pinned in \texttt{requirements.txt} so that every result can be reproduced.
+
+\begin{table}[H]
+\centering
+\caption{Software used.}
+\label{tab:sw}
+\begin{tabular}{lll}
+\toprule
+Package & Version & Use\\
+\midrule
+Qiskit \cite{qiskit} & 2.6.2 & Circuits, Pauli operators, statevector\\
+Qiskit Aer & 0.18.4 & Shot-based circuit simulation\\
+Qiskit IBM Runtime & 0.52.1 & Execution on IBM quantum hardware\\
+NumPy / SciPy & 2.4.6 / 1.17.1 & Linear algebra, SLSQP, COBYLA\\
+pandas / Matplotlib & 3.1.1 / 3.11.2 & Result tables and figures\\
+PYPOWER & 5.1.21 & Independent load-flow check (tests only)\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Code organisation}
+\begin{table}[H]
+\centering
+\caption{Project modules.}
+\label{tab:modules}
+\begin{tabular}{>{\ttfamily\small}l p{0.55\textwidth}}
+\toprule
+\normalfont File & Purpose\\
+\midrule
+eld/data.py & Loads the 6-bus data (JSON transcription of Prada App.~D); cost functions\\
+eld/classical.py & SLSQP and $\lambda$-iteration, with and without losses\\
+eld/qubo.py & Binary encoding, QUBO construction, exhaustive energies, Ising mapping\\
+eld/qaoa.py & QAOA circuit, CVaR training, INTERP, sampling\\
+eld/refine.py & Hybrid refinement inside a box around the QAOA dispatch\\
+eld/metaheuristics.py & PSO, GA and simulated annealing baselines\\
+eld/network.py & Y-bus, B-coefficient loss model, Newton--Raphson load flow\\
+scripts/run\_all.py & Full 12-period QAOA study\\
+scripts/run\_baselines.py & 20-seed comparison with standard algorithms\\
+scripts/run\_penalty\_sweep.py & Penalty-weight sweep\\
+scripts/run\_losses.py & Losses study and AC validation\\
+scripts/run\_ibm.py & IBM hardware experiment\\
+scripts/plots.py & All figures\\
+tests/test\_validation.py & Independent correctness checks\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Settings}
+\begin{table}[H]
+\centering
+\caption{Main settings of the QAOA study.}
+\label{tab:settings}
+\begin{tabular}{ll}
+\toprule
+Setting & Value\\
+\midrule
+Bits per generator / qubits & 4 / 12\\
+Penalty weight $A$ & 20 \$/MW$^2$h\\
+QAOA depth & $p = 1, 2, 3, 4$ (INTERP)\\
+Objective & CVaR, $\alpha = 0.05$\\
+Optimiser & COBYLA, 8 restarts at $p = 1$, max.\ 400 iterations\\
+Shots & 4096\\
+Candidates refined & 5 lowest-energy sampled bitstrings\\
+Random seed & 7\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The number of shots equals the number of bitstrings ($2^{12}$), so QAOA uses the same evaluation budget as exhaustive search and the simulated-annealing baseline.
+
+\section{Baseline algorithms}
+All stochastic baselines were run for 20 random seeds in each of the 12 periods (240 runs each). Their evaluation budget was matched to QAOA's 4096 shots.
+\begin{itemize}
+\item \textbf{PSO} \cite{shi1998}: 30 particles, 100 iterations, inertia weight decreasing linearly from 0.9 to 0.4, $c_1 = c_2 = 2$, velocity clamp 20\,\% of the range.
+\item \textbf{GA}: real-coded, 30 individuals, 100 generations, SBX crossover \cite{deb1995} ($p_c = 0.9$, $\eta_c = 15$), mutation probability 0.1.
+\item Both PSO and GA were tested in two standard ways of handling the balance constraint: a \emph{penalty} term ($10^4 \times$ mismatch$^2$), and the \emph{dependent-unit} method of Gaing \cite{gaing2003}, in which G1 is computed from the others to close the balance exactly.
+\item \textbf{SA} \cite{kirkpatrick1983}: single-bit-flip simulated annealing on the same 12-bit QUBO, 4096 energy evaluations, geometric cooling; the five lowest-energy distinct states it visits are refined in the same way as QAOA's five best samples.
+\item \textbf{Exhaustive search}: all 4096 bitstrings evaluated; the best five are refined. This is the ideal limit of any QUBO solver.
+\end{itemize}
+
+\section{IBM hardware execution}
+The hardware run used the IBM Quantum Platform Open plan through the Qiskit Runtime \texttt{SamplerV2} primitive. A 12-qubit depth-4 circuit is too deep for current hardware, so period~1 was encoded with 2 and 3 bits per unit (6 and 9 qubits) at $p = 1$. The angles were trained on the simulator, the circuits were transpiled with optimisation level~3 for the least-busy backend, and each was run with 4096 shots. The API key was stored in a local \texttt{.env} file excluded from version control.
+
+\section{Validation tests}
+\texttt{tests/test\_validation.py} checks each building block against an independent reference:
+\begin{enumerate}
+\item SLSQP and $\lambda$-iteration give the same cost in all periods.
+\item The Ising Hamiltonian reproduces the QUBO energy of all 4096 bitstrings.
+\item The Newton--Raphson load flow reproduces PYPOWER's solution of MATPOWER \texttt{case6ww} (generator outputs, losses of 7.875~MW, reactive powers, voltages and angles).
+\item The B-coefficient loss formula is within 6\,\% of the AC losses in all periods.
+\end{enumerate}
+All four tests pass.

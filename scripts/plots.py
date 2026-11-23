@@ -21,7 +21,7 @@ plt.rcParams.update({
     "axes.titleweight": "bold", "axes.titlelocation": "left",
     "xtick.color": MUTED, "ytick.color": MUTED, "axes.grid": True, "axes.grid.axis": "y",
     "grid.color": GRID, "grid.linewidth": 0.6, "axes.spines.top": False, "axes.spines.right": False,
-    "legend.frameon": False, "legend.labelcolor": INK2, "lines.linewidth": 2, "lines.markersize": 7,
+    "axes.axisbelow": True, "legend.frameon": False, "legend.labelcolor": INK2, "lines.linewidth": 2, "lines.markersize": 7,
 })
 
 
@@ -122,8 +122,9 @@ def convergence(depth, period=1):
     for (_, r), col in zip(d.iterrows(), [S1, S2, S3, S4]):
         h = np.minimum.accumulate(json.loads(r.history))
         ax.plot(np.arange(1, len(h) + 1), h, color=col, label=f"p = {r.p}")
+    ax.set_yscale("log")
     ax.set_xlabel("Optimizer iteration (COBYLA)")
-    ax.set_ylabel("Normalised CVaR cost (0 = optimum)")
+    ax.set_ylabel("Normalised CVaR cost (log scale)")
     ax.set_title(f"QAOA training convergence, period {period} ({int(d.demand.iloc[0])} MW)")
     ax.legend()
     save(fig, "convergence.png")
@@ -155,8 +156,64 @@ def hardware():
     plt.close(fig)
 
 
+def baselines():
+    f = RES / "baselines_summary.csv"
+    if not f.exists():
+        return
+    s = pd.read_csv(f)
+    s = s[s.runs > 12].sort_values("success_rate")          # stochastic methods, 240 runs each
+    fig, ax = plt.subplots(figsize=(8, 3.8))
+    cols = [S1 if m.startswith("QAOA") else MUTED for m in s.method]
+    ax.barh(s.method, 100 * s.success_rate, color=cols, height=0.6, edgecolor=SURFACE)
+    for i, (v, g) in enumerate(zip(s.success_rate, s.mean_gap_pct)):
+        ax.text(100 * v + 1, i, f"{100 * v:.1f}%  (mean gap {g:.3f}%)", va="center", fontsize=8, color=INK2)
+    ax.set_xlim(0, 135)
+    ax.set_xticks(range(0, 101, 20))
+    ax.grid(axis="x", color=GRID, linewidth=0.6)
+    ax.grid(axis="y", visible=False)
+    ax.set_xlabel("Runs within 0.1% of the SLSQP optimum and meeting demand (%)")
+    ax.set_title("Success rate over 240 runs (12 periods × 20 seeds)")
+    save(fig, "baselines_success.png")
+
+
+def losses():
+    f = RES / "losses.csv"
+    if not f.exists():
+        return
+    d = pd.read_csv(f)
+    x = d.period.values
+    w = 0.38
+    fig, ax = plt.subplots(figsize=(8, 3.6))
+    ax.bar(x - w / 2, d.ploss_formula_hybrid, w, color=S1, label="Loss formula (B-coefficients)", edgecolor=SURFACE)
+    ax.bar(x + w / 2, d.nr_hybrid_loss_losses_mw, w, color=S2, label="Newton–Raphson AC load flow", edgecolor=SURFACE)
+    ax.set_xticks(x)
+    ax.set_xlabel("Load period")
+    ax.set_ylabel("Transmission loss (MW)")
+    ax.set_title("Losses of the hybrid QAOA dispatch: formula vs AC load flow")
+    ax.legend(loc="upper left")
+    save(fig, "losses.png")
+
+    fig, ax = plt.subplots(figsize=(8, 3.6))
+    load = d.nr_hybrid_loss_max_line_loading_pct
+    ax.bar(x, load, 0.6, color=[S2 if v > 100 else S1 for v in load], edgecolor=SURFACE)
+    for xi, v in zip(x, load):
+        ax.text(xi, v + 3, f"{v:.0f}%", ha="center", fontsize=8, color=INK2, zorder=4,
+                bbox=dict(facecolor=SURFACE, edgecolor="none", pad=1))
+    for lvl, txt in ((100, "continuous rating 60 MVA"), (125, "short-term rating 75 MVA")):
+        ax.axhline(lvl, color=MUTED, linestyle="--", linewidth=1, zorder=1)
+        ax.text(3.5, lvl + 2, txt, fontsize=8, color=MUTED, va="bottom", ha="center")
+    ax.set_xticks(x)
+    ax.set_ylim(0, 165)
+    ax.set_xlabel("Load period")
+    ax.set_ylabel("Loading of line T09, bus 3–6 (%)")
+    ax.set_title("Most loaded line under the hybrid QAOA dispatch (AC load flow)")
+    save(fig, "line_loading.png")
+
+
 def main():
     FIG.mkdir(parents=True, exist_ok=True)
+    baselines()
+    losses()
     periods = pd.read_csv(RES / "periods.csv")
     depth = pd.read_csv(RES / "qaoa_depth.csv")
     dispatch(periods)

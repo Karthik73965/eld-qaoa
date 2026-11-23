@@ -24,6 +24,31 @@ def solve_slsqp(sys: System, demand, lo=None, hi=None):
     return res.x, gen_cost(sys, res.x)
 
 
+def solve_slsqp_losses(sys: System, demand, loss, lo=None, hi=None, x0=None):
+    """Minimise total cost s.t. sum(P) = demand + P_L(P) (Kron loss formula) and lo <= P <= hi."""
+    lo = sys.pmin if lo is None else lo
+    hi = sys.pmax if hi is None else hi
+    # start from the lossless optimum scaled up by the estimated losses (several starts for robustness)
+    P_ll = solve_slsqp(sys, demand, lo, hi)[0] if lo.sum() <= demand <= hi.sum() else (lo + hi) / 2
+    starts = [P_ll * (1 + loss(P_ll) / demand), P_ll, (lo + hi) / 2]
+    if x0 is not None:
+        starts.insert(0, x0)
+    for start in starts:
+        res = minimize(
+            lambda P: gen_cost(sys, P),
+            np.clip(start, lo, hi),
+            jac=lambda P: 2 * sys.a * P + sys.b,
+            bounds=list(zip(lo, hi)),
+            constraints=[{"type": "eq", "fun": lambda P: P.sum() - demand - loss(P),
+                          "jac": lambda P: np.ones_like(P) - loss.grad(P)}],
+            method="SLSQP",
+            options={"ftol": 1e-10, "maxiter": 500},
+        )
+        if res.success and abs(res.x.sum() - demand - loss(res.x)) < 1e-6:
+            return res.x, gen_cost(sys, res.x)
+    raise RuntimeError(f"SLSQP (losses) failed: {res.message}")
+
+
 def solve_lambda(sys: System, demand, tol=1e-9):
     """Equal-incremental-cost dispatch by bisection on lambda, respecting generator limits."""
     def output(lam):

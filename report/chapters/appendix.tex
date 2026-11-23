@@ -1,0 +1,60 @@
+\chapter{Test-System Data}
+
+\begin{table}[H]
+\centering
+\caption{Line data (Prada \cite{prada2017}, Table 31), 100~MVA base.}
+\label{tab:lines}
+\begin{tabular}{lccrrrcc}
+\toprule
+Line & From & To & $R$ (pu) & $X$ (pu) & $B_c$ (pu) & Rating & Short-term\\
+ & & & & & & (MVA) & (MVA)\\
+\midrule
+T01 & 1 & 2 & 0.10 & 0.20 & 0.04 & 100 & 125\\
+T02 & 1 & 4 & 0.05 & 0.20 & 0.04 & 100 & 125\\
+T03 & 1 & 5 & 0.08 & 0.30 & 0.06 & 100 & 125\\
+T04 & 2 & 3 & 0.05 & 0.25 & 0.06 & 60 & 75\\
+T05 & 2 & 4 & 0.05 & 0.10 & 0.02 & 60 & 75\\
+T06 & 2 & 5 & 0.10 & 0.30 & 0.04 & 60 & 75\\
+T07 & 2 & 6 & 0.07 & 0.20 & 0.05 & 60 & 75\\
+T08 & 3 & 5 & 0.12 & 0.26 & 0.05 & 60 & 75\\
+T09 & 3 & 6 & 0.02 & 0.10 & 0.02 & 60 & 75\\
+T10 & 4 & 5 & 0.20 & 0.40 & 0.08 & 60 & 75\\
+T11 & 5 & 6 & 0.10 & 0.30 & 0.06 & 60 & 75\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Bus and generator operating data.}
+\begin{tabular}{lp{0.68\textwidth}}
+\toprule
+Item & Value (source)\\
+\midrule
+Base voltage & 230~kV at all buses (Prada Table 30)\\
+Voltage limits & 0.95--1.07~pu (Prada Table 30)\\
+Bus types & Bus 1 slack, buses 2--3 PV, buses 4--6 PQ (\texttt{case6ww})\\
+Voltage set-points & $V_1 = 1.05$, $V_2 = 1.05$, $V_3 = 1.07$~pu (\texttt{case6ww})\\
+Reactive limits & G1, G2: $-100$ to $150$~MVAr; G3: $-100$ to $120$~MVAr (Prada Table 33)\\
+Base power & 100~MVA (\texttt{case6ww})\\
+Load power factor & 0.98 lagging (Prada Sec.~8.1)\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\chapter{Reproducing the Results}
+
+The code, data, results and this report are in the repository \url{https://github.com/Karthik73965/eld-qaoa}. To reproduce every number:
+\begin{lstlisting}
+python -m venv .venv
+.venv\Scripts\activate          (Windows)   or   source .venv/bin/activate
+pip install -r requirements.txt
+python tests/test_validation.py      # 4 independent checks
+python scripts/run_all.py            # 12-period QAOA study
+python scripts/run_penalty_sweep.py
+python scripts/run_baselines.py      # PSO, GA, SA, exhaustive, QAOA (20 seeds)
+python scripts/run_losses.py         # losses + Newton-Raphson
+python scripts/plots.py              # all figures
+python scripts/run_ibm.py            # optional: needs IBM_QUANTUM_TOKEN in .env
+\end{lstlisting}
+The provenance of every input value and the reason for every setting are recorded in \texttt{docs/SOURCES.md}.

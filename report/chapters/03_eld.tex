@@ -1,0 +1,88 @@
+\chapter{Economic Load Dispatch and the Test System}
+
+\section{Problem formulation}
+For $N$ committed generators, the lossless ELD problem is
+\begin{align}
+\min_{P_1,\dots,P_N}\ & \sum_{i=1}^{N} C_i(P_i) = \sum_{i=1}^{N} \left(a_iP_i^2 + b_iP_i + c_i\right) \label{eq:cost}\\
+\text{subject to}\ & \sum_{i=1}^{N} P_i = \PD, \label{eq:balance}\\
+& P_i^{\min} \le P_i \le P_i^{\max}, \quad i = 1,\dots,N. \label{eq:limits}
+\end{align}
+When transmission losses are included, \eqref{eq:balance} becomes $\sum_i P_i = \PD + \PL(P)$.
+
+\section{Classical solution methods}
+\subsection{Equal incremental cost ($\lambda$-iteration)}
+The Lagrangian of \eqref{eq:cost}--\eqref{eq:balance} gives the optimality condition
+\begin{equation}
+\frac{dC_i}{dP_i} = 2a_iP_i + b_i = \lambda \quad \Rightarrow \quad P_i(\lambda) = \frac{\lambda - b_i}{2a_i},
+\end{equation}
+with $P_i$ clipped to its limits. The scalar $\lambda$ is found by bisection so that $\sum_i P_i(\lambda) = \PD$. This method is used as an independent check.
+
+\subsection{SLSQP}
+Sequential least-squares quadratic programming \cite{kraft1988}, as implemented in SciPy, solves \eqref{eq:cost}--\eqref{eq:limits} directly with an equality constraint and bounds. SLSQP is the reference (benchmark) solver of this project; its result is called the \emph{optimum} in later chapters.
+
+\section{Test system}
+The test system is the 6-bus, 3-generator system of Wood and Wollenberg \cite{wood2014}, with the data of Prada \cite{prada2017}, Appendix~D. Buses 1--3 are generator buses and buses 4--6 are load buses, connected by 11 lines at 230~kV. Values not given by Prada --- the 100~MVA base and the generator voltage set-points --- are taken from MATPOWER \texttt{case6ww} \cite{matpower2011}, the digital record of the original system. Every value and its source are logged in \texttt{docs/SOURCES.md} of the project repository.
+
+\begin{table}[H]
+\centering
+\caption{Generator data (Prada \cite{prada2017}, Tables 33--34).}
+\label{tab:gen}
+\begin{tabular}{lcccccc}
+\toprule
+Unit & Bus & $P^{\min}$ (MW) & $P^{\max}$ (MW) & $a$ (\$/MW$^2$h) & $b$ (\$/MWh) & $c$ (\$/h)\\
+\midrule
+G1 & 1 & 50.0 & 200 & 0.00533 & 11.669 & 213.1\\
+G2 & 2 & 37.5 & 150 & 0.00889 & 10.333 & 200.0\\
+G3 & 3 & 45.0 & 180 & 0.00741 & 10.833 & 240.0\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Load profile in MW (Prada \cite{prada2017}, Table 32); load power factor 0.98.}
+\label{tab:load}
+\small
+\begin{tabular}{lcccccccccccc}
+\toprule
+Period & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12\\
+\midrule
+Bus 4 & 84 & 70 & 64 & 60 & 67 & 77 & 90 & 104 & 110 & 107 & 100 & 90\\
+Bus 5 & 83 & 70 & 63 & 60 & 67 & 77 & 90 & 103 & 110 & 107 & 100 & 90\\
+Bus 6 & 83 & 70 & 63 & 60 & 66 & 76 & 90 & 103 & 110 & 106 & 100 & 90\\
+\midrule
+Total & 250 & 210 & 190 & 180 & 200 & 230 & 270 & 310 & 330 & 320 & 300 & 270\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The line data (resistance, reactance, charging susceptance and ratings) are listed in Appendix~A.
+
+\section{Classical optimum}
+Table~\ref{tab:slsqp} gives the SLSQP optimum for each period. SLSQP and $\lambda$-iteration agree to within $10^{-6}$~\$/h in all periods. In periods 2--6 the most expensive unit, G1, is held at its 50~MW minimum, so the generator limit is active and the system $\lambda$ is set by G2 and G3. The total cost over the 12 periods is \$43{,}171.05.
+
+\begin{table}[H]
+\centering
+\caption{SLSQP optimal lossless dispatch.}
+\label{tab:slsqp}
+\begin{tabular}{cccccrr}
+\toprule
+Period & $\PD$ (MW) & G1 (MW) & G2 (MW) & G3 (MW) & Cost (\$/h) & $\lambda$ (\$/MWh)\\
+\midrule
+1 & 250 & 51.08 & 105.77 & 93.15 & 3528.83 & 12.21\\
+2 & 210 & 50.00 & 88.07 & 71.93 & 3046.41 & 11.90\\
+3 & 190 & 50.00 & 78.98 & 61.02 & 2810.05 & 11.74\\
+4 & 180 & 50.00 & 74.44 & 55.56 & 2693.08 & 11.66\\
+5 & 200 & 50.00 & 83.53 & 66.47 & 2927.83 & 11.82\\
+6 & 230 & 50.00 & 97.17 & 82.83 & 3286.01 & 12.06\\
+7 & 270 & 59.71 & 110.94 & 99.36 & 3774.02 & 12.31\\
+8 & 310 & 76.96 & 121.28 & 111.76 & 4269.91 & 12.49\\
+9 & 330 & 85.58 & 126.45 & 117.97 & 4520.62 & 12.58\\
+10 & 320 & 81.27 & 123.86 & 114.87 & 4395.04 & 12.54\\
+11 & 300 & 72.64 & 118.69 & 108.66 & 4145.25 & 12.44\\
+12 & 270 & 59.71 & 110.94 & 99.36 & 3774.02 & 12.31\\
+\midrule
+\multicolumn{5}{l}{Total} & 43171.05 & \\
+\bottomrule
+\end{tabular}
+\end{table}

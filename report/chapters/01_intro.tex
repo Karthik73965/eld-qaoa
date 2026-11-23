@@ -1,0 +1,30 @@
+\chapter{Introduction}
+
+\section{Background}
+A power system must supply a load that changes from hour to hour. For every load level, the operator decides how much power each committed generating unit should produce. Because the units have different fuel costs, the way the load is shared changes the total operating cost. \emph{Economic load dispatch} (ELD) is the problem of choosing these outputs so that the total fuel cost is as small as possible, while generation equals demand plus losses and every unit stays inside its limits \cite{wood2014}. ELD is solved every few minutes in a real control centre and is a core topic of power-system operation.
+
+For units with quadratic cost curves and no other constraints, ELD is a convex problem: the classical equal-incremental-cost ($\lambda$-iteration) method and general solvers such as sequential quadratic programming find the global optimum in milliseconds. Practical extensions such as unit commitment (on/off decisions), prohibited operating zones and valve-point effects make the problem non-convex or combinatorial, and those versions are where new optimisation methods are tested.
+
+\section{Quantum computing and QAOA}
+Quantum computers store information in qubits, which can be in superpositions of 0 and 1. A register of $n$ qubits can therefore represent a superposition of all $2^n$ bitstrings at once. Present devices are \emph{noisy intermediate-scale quantum} (NISQ) processors with tens to hundreds of qubits and limited circuit depth.
+
+The Quantum Approximate Optimization Algorithm (QAOA), proposed by Farhi, Goldstone and Gutmann in 2014 \cite{farhi2014}, is designed for such devices. It prepares a parameterised quantum state whose measurement favours low-cost bitstrings of a combinatorial problem, and a classical optimiser tunes the parameters. QAOA solves problems written as a \emph{quadratic unconstrained binary optimisation} (QUBO), which is equivalent to finding the ground state of an Ising Hamiltonian \cite{lucas2014}.
+
+\section{Motivation}
+Several studies have proposed quantum and quantum-inspired methods for power-system optimisation, including economic dispatch \cite{han2024,jing2023,wang2024}. Before such methods can be trusted for larger, harder problems, they must be shown to work correctly on a problem whose true answer is known. ELD on a small system is such a problem: the classical optimum is available exactly, so the accuracy of the quantum method can be measured rather than assumed. This project carries out that test carefully and reports both what QAOA achieves and where it falls short.
+
+\section{Objectives}
+\begin{enumerate}
+\item Formulate ELD of the 6-bus, 3-generator system as a QUBO using binary encoding of generator outputs and a quadratic power-balance penalty, and map it to an Ising Hamiltonian.
+\item Solve the 12-qubit problem with QAOA for all 12 load periods, and study the effect of circuit depth.
+\item Refine the QAOA samples with a bounded classical step to obtain dispatches that meet demand exactly (hybrid QAOA).
+\item Benchmark the result against SLSQP, $\lambda$-iteration and standard heuristics (PSO, GA, simulated annealing) using a common success criterion.
+\item Execute the QAOA circuit on real IBM quantum hardware.
+\item Extend the study to transmission losses and check all dispatches with an AC Newton--Raphson load flow.
+\end{enumerate}
+
+\section{Scope and limitations}
+The study is limited to static, single-period ELD with quadratic costs for each of the 12 periods; ramp-rate coupling between periods, unit commitment and reserves are outside its scope. The full 12-qubit QAOA is evaluated on a classical simulator; real hardware is used for 6- and 9-qubit versions. Line flow limits are not enforced in the dispatch, but they are checked afterwards with the load flow.
+
+\section{Organisation of the report}
+Chapter~2 reviews related work. Chapter~3 describes the ELD problem and the test system. Chapter~4 develops the QUBO formulation and the QAOA method. Chapter~5 describes the software implementation. Chapter~6 presents results on the simulator, the comparison with standard algorithms and the hardware experiment. Chapter~7 covers transmission losses and AC validation. Chapter~8 concludes the report and outlines future work.

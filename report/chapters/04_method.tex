@@ -1,0 +1,112 @@
+\chapter{QUBO Formulation and QAOA Method}
+
+Figure~\ref{fig:pipeline} summarises the method. Steps 1--3 and 5--6 run on a classical computer; step 4 is the quantum step.
+
+\begin{figure}[H]
+\centering
+\small
+\setlength{\fboxsep}{6pt}
+\begin{tabular}{@{}c@{\,$\rightarrow$\,}c@{\,$\rightarrow$\,}c@{\,$\rightarrow$\,}c@{\,$\rightarrow$\,}c@{\,$\rightarrow$\,}c@{}}
+\fbox{\parbox{1.5cm}{\centering 1.\ System data}} &
+\fbox{\parbox{1.5cm}{\centering 2.\ Binary encoding}} &
+\fbox{\parbox{1.5cm}{\centering 3.\ QUBO $\to$ Ising}} &
+\fbox{\parbox{1.5cm}{\centering\bfseries 4.\ CVaR-QAOA}} &
+\fbox{\parbox{1.5cm}{\centering 5.\ Decode \& refine}} &
+\fbox{\parbox{1.5cm}{\centering 6.\ Validate}}
+\end{tabular}
+\caption{Hybrid quantum--classical workflow.}
+\label{fig:pipeline}
+\end{figure}
+
+\section{Binary encoding of generator outputs}
+Each generator output is represented by $n = 4$ binary variables:
+\begin{equation}
+P_i(x) = P_i^{\min} + \Delta P_i \sum_{k=0}^{n-1} 2^k x_{ik}, \qquad \Delta P_i = \frac{P_i^{\max} - P_i^{\min}}{2^n - 1}.
+\label{eq:enc}
+\end{equation}
+With $n = 4$, each unit takes one of 16 levels from $P_i^{\min}$ to $P_i^{\max}$; every bitstring therefore satisfies the generator limits \eqref{eq:limits} automatically, and the limits need no penalty. The encoding steps are $\Delta P = 10$, $7.5$ and $9$~MW for G1, G2 and G3. Three units give 12 binary variables, mapped to 12 qubits (variable $j = 4i + k$ on qubit $j$), and $2^{12} = 4096$ candidate dispatches.
+
+\section{QUBO objective}
+The power-balance equality is added as a quadratic penalty \cite{lucas2014}:
+\begin{equation}
+E(x) = \sum_{i=1}^{3} \left( a_iP_i(x)^2 + b_iP_i(x) + c_i \right) + A \left( \sum_{i=1}^{3} P_i(x) - \PD \right)^2.
+\label{eq:qubo}
+\end{equation}
+Because $P_i(x)$ is linear in $x$, both terms are quadratic in the binary variables. Using $x_j^2 = x_j$, \eqref{eq:qubo} is written as
+\begin{equation}
+E(x) = c_0 + \sum_j q_j x_j + \sum_{j<l} U_{jl} x_j x_l,
+\end{equation}
+where the constant $c_0$, the linear weights $q_j$ and the couplings $U_{jl}$ are computed from the generator data and $\PD$. Each period has its own QUBO, because $\PD$ changes.
+
+\subsection{Choice of penalty weight}
+If $A$ is too small, the cheapest bitstring under-supplies the demand; if $A$ is too large, the balance term dominates and the cost information is lost in a landscape of nearly equal energies. The optimum of the QUBO was found by exhaustive search for $A \in \{1, 5, 20, 100\}$ in all 12 periods (Table~\ref{tab:penalty}).
+
+\begin{table}[H]
+\centering
+\caption{Penalty sweep: QUBO optimum over all 12 periods.}
+\label{tab:penalty}
+\begin{tabular}{crr}
+\toprule
+$A$ (\$/MW$^2$h) & Max.\ $|\sum P - \PD|$ (MW) & Mean cost difference vs SLSQP\\
+\midrule
+1 & 7.0 & $-2.00$\,\%\\
+5 & 2.0 & $-0.39$\,\%\\
+\textbf{20} & \textbf{0.5} & $\mathbf{+0.011}$\,\%\\
+100 & 0.0 & $+0.176$\,\%\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A negative cost difference is not a saving: it comes from supplying less than the demand. $A = 20$ is the smallest value that keeps the mismatch at or below 0.5~MW in every period and is used throughout.
+
+\section{Ising Hamiltonian}
+The substitution $x_j = (1 - Z_j)/2$ turns the QUBO into the Ising Hamiltonian
+\begin{equation}
+H_C = \sum_j h_j Z_j + \sum_{j<l} J_{jl} Z_j Z_l, \qquad
+h_j = -\frac{q_j}{2} - \frac{1}{4}\sum_{l \ne j} U_{jl}, \qquad
+J_{jl} = \frac{U_{jl}}{4},
+\end{equation}
+with a constant offset $c_0 + \tfrac12\sum_j q_j + \tfrac14\sum_{j<l}U_{jl}$, so that $E(x) = \langle x|H_C|x\rangle + \text{offset}$ for every computational basis state $|x\rangle$. This identity was checked for all 4096 bitstrings. Since the encoding couples every pair of bits through the balance penalty, $H_C$ has 12 linear terms and 66 two-body terms. For training, $H_C$ is divided by its largest coefficient magnitude, which keeps the useful range of $\gamma$ near $[0, \pi]$.
+
+\section{The QAOA circuit}
+QAOA with depth $p$ prepares
+\begin{equation}
+|\psi(\boldsymbol\gamma, \boldsymbol\beta)\rangle = \prod_{\ell=1}^{p} e^{-i\beta_\ell H_M} e^{-i\gamma_\ell H_C} \, |+\rangle^{\otimes 12}, \qquad H_M = \sum_j X_j.
+\end{equation}
+The circuit is built from native gates:
+\begin{itemize}
+\item a Hadamard gate on every qubit creates $|+\rangle^{\otimes 12}$, the uniform superposition of all 4096 dispatches;
+\item the cost unitary is a product of $R_Z(2\gamma_\ell h_j)$ on each qubit and $R_{ZZ}(2\gamma_\ell J_{jl})$ on each coupled pair, exact because all terms of $H_C$ commute;
+\item the mixer unitary is $R_X(2\beta_\ell)$ on every qubit;
+\item all qubits are measured in the computational basis.
+\end{itemize}
+The circuit has $2p$ parameters.
+
+\section{Training}
+\subsection{CVaR objective}
+Instead of the mean energy $\langle H_C \rangle$, the parameters minimise the conditional value-at-risk \cite{barkoutsos2020}: the mean energy of the lowest-energy fraction $\alpha$ of the output distribution. With the basis states sorted by energy $E_{(1)} \le E_{(2)} \le \dots$ and probabilities $p_{(k)}$,
+\begin{equation}
+\mathrm{CVaR}_\alpha = \frac{1}{\alpha} \sum_k E_{(k)} \, \min\!\left( p_{(k)},\ \max\!\left(0,\ \alpha - \textstyle\sum_{m<k} p_{(m)}\right) \right).
+\end{equation}
+$\alpha = 0.05$ is used. Minimising CVaR rewards placing probability on the best dispatches rather than improving the average one, which suits the goal of sampling the optimum. The value is normalised to $[0, 1]$ between the minimum and maximum QUBO energy for reporting.
+
+\subsection{Optimiser and initialisation}
+The classical optimiser is COBYLA (gradient-free, at most 400 iterations). At $p = 1$, eight random starting points are used and the best result is kept. Depth $p + 1$ is initialised from the optimum at depth $p$ by the INTERP rule of Zhou et al. \cite{zhou2020},
+\begin{equation}
+\gamma^{(p+1)}_i = \frac{i-1}{p}\gamma^{(p)}_{i-1} + \frac{p-i+1}{p}\gamma^{(p)}_{i}, \qquad i = 1,\dots,p+1,
+\end{equation}
+with $\gamma^{(p)}_0 = \gamma^{(p)}_{p+1} = 0$, and the same rule for $\boldsymbol\beta$. Training uses the exact statevector of the noise-free simulator.
+
+\section{Sampling, decoding and hybrid refinement}
+The trained circuit is measured 4096 times on the Qiskit Aer simulator. Each distinct bitstring is decoded to MW with \eqref{eq:enc}, and the five lowest-energy bitstrings are kept. Because the grid is 7.5--10~MW wide, the best grid point usually differs slightly from the continuous optimum and may miss $\PD$ by up to 0.5~MW. Each of the five candidates is therefore refined: every generator may move at most one grid step $\pm\Delta P_i$ from its QAOA level, and the small continuous problem inside this box is solved with SLSQP to meet $\PD$ exactly. The cheapest refined dispatch is the hybrid result. The box is widened only if demand cannot be met inside it; this was never needed for the lossless case.
+
+The refinement does not repeat the whole optimisation: it only searches a box of about one grid cell chosen by QAOA. Its quality therefore depends on QAOA choosing the right cell, which is measured in Chapter~6.
+
+\section{Performance measures}
+\begin{itemize}
+\item \textbf{Cost gap}: $(C_{\text{method}} - C_{\text{SLSQP}})/C_{\text{SLSQP}} \times 100\,\%$.
+\item \textbf{Mismatch}: $\sum_i P_i - \PD$ in MW.
+\item \textbf{Amplification}: probability of measuring the QUBO-optimal bitstring divided by its probability under uniform sampling ($1/4096$).
+\item \textbf{Near-optimal probability}: probability that a measured bitstring is a usable starting point, i.e.\ its dispatch is within one grid step of $\PD$ and its cost within 1\,\% of the SLSQP cost.
+\item \textbf{Success}: a run succeeds if its final cost is within 0.1\,\% of SLSQP and $|\text{mismatch}| \le 0.01$~MW.
+\end{itemize}

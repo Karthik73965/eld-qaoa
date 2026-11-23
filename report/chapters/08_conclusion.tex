@@ -1,0 +1,30 @@
+\chapter{Conclusion and Future Scope}
+
+\section{Conclusions}
+This project formulated the economic load dispatch of the 6-bus, 3-generator system as a 12-qubit QUBO and solved it with QAOA for all 12 periods of a daily load profile. The main conclusions are:
+\begin{enumerate}
+\item \textbf{Formulation.} Binary encoding with four bits per unit satisfies the generator limits automatically, and a quadratic penalty with $A = 20$, chosen by a sweep, keeps the power mismatch of the QUBO optimum at or below 0.5~MW.
+\item \textbf{Accuracy.} QAOA sampled the exact QUBO optimum in all 12 periods. After refinement, the hybrid dispatch meets the demand exactly and is within 0.041\,\% of the SLSQP optimum (\$2.83 over a daily cost of \$43{,}171).
+\item \textbf{Quantum effect.} The trained circuit makes the optimal dispatch 10.2 times more likely than random sampling on average at $p = 4$ (up to 31 times), and the gain grows steadily with depth.
+\item \textbf{Comparison.} On the same QUBO with the same budget and refinement, QAOA succeeded in 100\,\% of 240 runs, against 92.5\,\% for simulated annealing. Continuous PSO and GA reach the exact optimum only when the balance constraint is handled with the dependent-unit method.
+\item \textbf{Hardware.} On IBM \texttt{ibm\_marrakesh}, a 6-qubit instance kept about 90\,\% of the ideal performance and gave the optimal dispatch after refinement; at 9 qubits, noise removed most of the gain.
+\item \textbf{Losses and network.} The iterative hybrid method with network-derived B-coefficients stays within 0.08\,\% of the loss-inclusive optimum, and the AC load flow confirms that voltages and reactive powers are within limits. It also shows that line T09 is overloaded at high load for both the quantum and the classical dispatch.
+\item \textbf{Speed.} QAOA gives no speed-up: classical methods solve this convex problem in about a millisecond. The project demonstrates correctness and probability amplification, not quantum advantage.
+\end{enumerate}
+
+\section{Limitations}
+\begin{itemize}
+\item The 12-qubit study was simulated; current hardware noise limits real runs to about 6--9 qubits for this circuit.
+\item The binary grid needs a classical refinement step to reach the continuous optimum.
+\item Single-period ELD only: ramp limits, reserves and unit commitment were not modelled.
+\item Line flow limits were checked but not enforced.
+\end{itemize}
+
+\section{Future scope}
+\begin{itemize}
+\item \textbf{Unit commitment}, where the on/off decisions are binary by nature and classical solvers face combinatorial growth: the most promising application of QAOA in power systems.
+\item \textbf{Security-constrained dispatch}, adding DC line-flow limits as further penalty terms to remove the T09 overload.
+\item \textbf{Larger systems}, such as the IEEE 14- and 30-bus systems, with hardware-efficient encodings.
+\item \textbf{Error mitigation} (readout and gate-error mitigation, dynamical decoupling) to extend real hardware runs beyond 9 qubits.
+\item \textbf{Multi-period dispatch} with ramp-rate coupling across the 12 periods.
+\end{itemize}

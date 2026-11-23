@@ -1,0 +1,26 @@
+\chapter{Literature Review}
+
+\section{Classical economic dispatch}
+The classical treatment of ELD is given by Wood, Wollenberg and Sheblé \cite{wood2014}. With quadratic costs $C_i(P_i) = a_iP_i^2 + b_iP_i + c_i$, the optimality condition is that every unit not at a limit operates at the same incremental cost $\lambda = dC_i/dP_i$; the $\lambda$-iteration method searches for this common value. Transmission losses are commonly represented by Kron's loss formula $\PL = P^\top B P + B_0^\top P + B_{00}$, whose coefficients are derived from the network. General nonlinear programming solvers, such as SLSQP \cite{kraft1988}, solve the same problem directly and handle additional constraints.
+
+\section{Heuristic methods for ELD}
+Population-based heuristics are widely used for non-convex dispatch. Gaing \cite{gaing2003} applied particle swarm optimisation (PSO) to ELD with generator constraints and handled the power-balance equality by computing one ``dependent'' unit from the others, which keeps every candidate exactly balanced. The inertia-weight PSO of Shi and Eberhart \cite{shi1998} is the usual variant. Real-coded genetic algorithms with simulated binary crossover (SBX) \cite{deb1995} and simulated annealing \cite{kirkpatrick1983} are other standard choices. These methods are used in this project as benchmarks.
+
+\section{QUBO and Ising formulations}
+Lucas \cite{lucas2014} showed how many NP problems can be written as Ising models: binary decision variables become spins, objectives become linear and quadratic terms, and constraints become quadratic penalties. The substitution $x = (1 - z)/2$ converts a QUBO in binary variables $x \in \{0,1\}$ into an Ising Hamiltonian in spins $z \in \{-1,+1\}$. This is the formulation route followed in this project.
+
+\section{QAOA}
+QAOA \cite{farhi2014} alternates a cost unitary $e^{-i\gamma H_C}$ and a mixer unitary $e^{-i\beta H_M}$ for $p$ layers, starting from the uniform superposition. Zhou et al. \cite{zhou2020} studied QAOA performance and proposed the INTERP strategy, in which optimised angles at depth $p$ are interpolated to initialise depth $p + 1$, avoiding poor random starts. Barkoutsos et al. \cite{barkoutsos2020} proposed training with the conditional value-at-risk (CVaR) of the sampled energies instead of the mean, which focuses the optimisation on the best outcomes and improves the probability of sampling the optimum.
+
+\section{Quantum methods for power-system dispatch}
+Han, Li and Xu \cite{han2024} proposed a quantum-assisted method for stochastic economic dispatch in renewable-rich systems. Jing, Wang and Li \cite{jing2023} developed a data-driven variant of QAOA for power-system optimisation problems. Wang, Cao and Li \cite{wang2024} applied a quantum-behaved particle swarm optimiser, a quantum-inspired classical heuristic, to economic dispatch. These works motivate the use of quantum algorithms in power systems but generally do not report a full comparison against exact and heuristic baselines on a common criterion, or AC validation of the resulting dispatch.
+
+\section{Research gap}
+From the review, the following gaps are addressed in this project:
+\begin{itemize}
+\item A transparent ELD-to-QUBO formulation with a justified penalty weight rather than an arbitrary one.
+\item Measurement of QAOA accuracy against the exact optimum over a full daily load profile.
+\item A fair comparison with standard algorithms using the same success criterion and evaluation budget.
+\item Validation of the quantum dispatch with an AC load flow, including losses, voltages and line loading.
+\item An honest report of real-hardware performance and of the absence of a speed-up.
+\end{itemize}

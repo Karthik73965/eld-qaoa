@@ -1,0 +1,96 @@
+% ---------------- Title page ----------------
+\begin{titlepage}
+\centering
+{\Large\bfseries QAOA-BASED ECONOMIC LOAD DISPATCH\\[4pt] USING QUBO FORMULATION\par}
+\vspace{0.8cm}
+{\large A Mini Project Report submitted in partial fulfilment of the\\ requirements for the award of the degree of\par}
+\vspace{0.4cm}
+{\large\bfseries BACHELOR OF TECHNOLOGY\\ in\\ ELECTRICAL AND ELECTRONICS ENGINEERING\par}
+\vspace{0.8cm}
+{\large Submitted by\par}
+\vspace{0.3cm}
+\begin{tabular}{ll}
+J. Karthikeya & (Roll No: \rule{3cm}{0.4pt})\\
+A. Krishna Chaitanya & (Roll No: \rule{3cm}{0.4pt})\\
+N. Ramesh & (Roll No: \rule{3cm}{0.4pt})\\
+M. Harika & (Roll No: \rule{3cm}{0.4pt})\\
+\end{tabular}
+\vspace{0.8cm}
+
+{\large Under the guidance of\\[4pt] \bfseries B. Madhusudhan Rao\par}
+\vfill
+% Place the college logo here if required: \includegraphics[width=3cm]{rgukt_logo}
+{\large\bfseries DEPARTMENT OF ELECTRICAL AND ELECTRONICS ENGINEERING\\
+RAJIV GANDHI UNIVERSITY OF KNOWLEDGE TECHNOLOGIES\\
+NUZVID, ANDHRA PRADESH\par}
+\vspace{0.3cm}
+{\large NOVEMBER 2026\par}
+\end{titlepage}
+
+% ---------------- Certificate ----------------
+\chapter*{Certificate}
+\addcontentsline{toc}{chapter}{Certificate}
+This is to certify that the mini project report entitled \textbf{``QAOA-Based Economic Load Dispatch Using QUBO Formulation''} is a bonafide record of the work carried out by \textbf{J.~Karthikeya, A.~Krishna Chaitanya, N.~Ramesh and M.~Harika} in partial fulfilment of the requirements for the award of the degree of Bachelor of Technology in Electrical and Electronics Engineering at Rajiv Gandhi University of Knowledge Technologies, Nuzvid, during the academic year 2026--27, under my supervision and guidance.
+
+\vspace{3cm}
+\noindent
+\begin{minipage}[t]{0.48\textwidth}
+\rule{5cm}{0.4pt}\\
+\textbf{B. Madhusudhan Rao}\\
+Project Guide\\
+Department of EEE\\
+RGUKT Nuzvid
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}\raggedleft
+\rule{5cm}{0.4pt}\\
+\textbf{Head of the Department}\\
+Department of EEE\\
+RGUKT Nuzvid
+\end{minipage}
+
+% ---------------- Declaration ----------------
+\chapter*{Declaration}
+\addcontentsline{toc}{chapter}{Declaration}
+We hereby declare that the work presented in this mini project report entitled \textbf{``QAOA-Based Economic Load Dispatch Using QUBO Formulation''} has been carried out by us under the guidance of B.~Madhusudhan Rao, Department of Electrical and Electronics Engineering, RGUKT Nuzvid. All data, methods and results taken from other sources have been acknowledged and cited. The work has not been submitted elsewhere for the award of any other degree.
+
+\vspace{2.5cm}
+\noindent
+\begin{tabular}{@{}p{0.5\textwidth}p{0.4\textwidth}@{}}
+J. Karthikeya & \rule{4cm}{0.4pt}\\[14pt]
+A. Krishna Chaitanya & \rule{4cm}{0.4pt}\\[14pt]
+N. Ramesh & \rule{4cm}{0.4pt}\\[14pt]
+M. Harika & \rule{4cm}{0.4pt}\\
+\end{tabular}
+
+\vspace{1cm}
+\noindent Place: Nuzvid\\
+Date: \rule{3cm}{0.4pt}
+
+% ---------------- Acknowledgement ----------------
+\chapter*{Acknowledgement}
+\addcontentsline{toc}{chapter}{Acknowledgement}
+We express our sincere gratitude to our project guide, \textbf{B.~Madhusudhan Rao}, Department of Electrical and Electronics Engineering, for the guidance, encouragement and constructive feedback given throughout this project.
+
+We thank the Head of the Department and all faculty members of the Department of EEE, RGUKT Nuzvid, for the facilities and support provided. We also thank the review panel for their suggestions during the project reviews.
+
+We acknowledge IBM Quantum for free access to quantum hardware through the IBM Quantum Platform Open plan, and the developers of Qiskit, SciPy, MATPOWER and PYPOWER, whose open-source tools made this work possible.
+
+\vspace{1.5cm}
+\noindent\hfill J.~Karthikeya\\
+\hspace*{\fill} A.~Krishna Chaitanya\\
+\hspace*{\fill} N.~Ramesh\\
+\hspace*{\fill} M.~Harika
+
+% ---------------- Abstract ----------------
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+Economic load dispatch (ELD) allocates the system load among committed generators so that total fuel cost is minimised while power balance and generator limits are met. This project studies whether the Quantum Approximate Optimization Algorithm (QAOA), a variational algorithm for near-term quantum computers, can solve ELD once it is written as a quadratic unconstrained binary optimisation (QUBO) problem.
+
+The 6-bus, 3-generator Wood--Wollenberg system with the 12-period load profile of Prada (2017) is used as the test case. Each generator output is encoded with four binary variables, giving a 12-qubit QUBO in which the power-balance constraint enters as a quadratic penalty. The penalty weight $A = 20$ was selected by a sweep over four values. The QUBO is mapped to an Ising Hamiltonian and solved with QAOA at depths $p = 1$ to $4$, trained with the conditional value-at-risk (CVaR) objective and INTERP initialisation. The five lowest-energy sampled bitstrings are refined by a bounded classical step to remove the residual power mismatch.
+
+The hybrid QAOA dispatch is within 0.041\,\% of the SLSQP optimum in every period (total cost \$43{,}173.88/h against \$43{,}171.05/h), and QAOA sampled the exact QUBO optimum in all 12 periods. At $p = 4$ the optimal dispatch is measured 10.2 times more often than under uniform sampling. Over 240 runs per method, QAOA with refinement succeeded in 100\,\% of cases against 92.5\,\% for simulated annealing on the same QUBO with the same evaluation budget and refinement; particle swarm optimisation and a genetic algorithm reach the continuous optimum when the dependent-unit method is used, but only 13.8\,\% and 7.5\,\% of runs succeed with a plain penalty. On the 156-qubit IBM \texttt{ibm\_marrakesh} processor, a 6-qubit instance found the optimum 2.4 times more often than random sampling, while gate noise removed most of the gain at 9 qubits.
+
+The study is extended to transmission losses using B-coefficients derived from the network, and every dispatch is checked with a Newton--Raphson AC load flow validated against PYPOWER. The work shows that QAOA solves ELD accurately but does not give a speed-up over classical methods for a problem of this size; its natural application is larger binary problems such as unit commitment.
+
+\vspace{0.5cm}
+\noindent\textbf{Keywords:} Economic load dispatch, QAOA, QUBO, Ising model, quantum computing, CVaR, Newton--Raphson load flow.
