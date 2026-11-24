@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QAOA Economic Dispatch</title>
+<meta name="description" content="Economic load dispatch of a 6-bus system solved with QAOA: formulation, results, IBM hardware run and AC validation. EEE mini project, RGUKT Nuzvid.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fbfaf7;--ink:#1d2430;--muted:#5b6472;--line:#e3e0d8;--accent:#2a78d6;--warm:#c2521f;--card:#ffffff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#11151c;--ink:#e7eaf0;--muted:#a1a9b6;--line:#2a313c;--accent:#6aa8f0;--warm:#f08a5d;--card:#181d26}}
+:root[data-theme="dark"]{--bg:#11151c;--ink:#e7eaf0;--muted:#a1a9b6;--line:#2a313c;--accent:#6aa8f0;--warm:#f08a5d;--card:#181d26}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:0 16px 80px}
+header{padding:64px 0 32px;border-bottom:1px solid var(--line)}
+.eyebrow{font:600 13px "IBM Plex Mono",monospace;letter-spacing:.08em;color:var(--accent);text-transform:uppercase;margin:0 0 12px}
+h1{font-size:clamp(30px,5vw,46px);line-height:1.15;margin:0 0 16px}
+h2{font-size:26px;margin:56px 0 12px}
+h3{font-size:18px;margin:24px 0 8px}
+p{margin:0 0 14px}
+.muted{color:var(--muted)}
+.links{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.links a{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px}
+.links a:hover{border-color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:32px 0 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+.stat b{display:block;font:600 30px "IBM Plex Mono",monospace;color:var(--accent)}
+.stat span{color:var(--muted);font-size:14px}
+.pipe{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font:14px "IBM Plex Mono",monospace;margin:14px 0}
+.pipe span{background:var(--card);border:1px solid var(--line);padding:6px 10px;border-radius:6px}
+.pipe span.q{border-color:var(--accent);color:var(--accent);font-weight:600}
+figure{margin:20px 0;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px}
+figure img{width:100%;height:auto;display:block}
+figcaption{color:#5b6472;font-size:14px;margin-top:8px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:720px){.two{grid-template-columns:1fr}}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px;margin:12px 0}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;color:var(--muted)}
+tr.hl td{font-weight:600}
+code{font-family:"IBM Plex Mono",monospace;font-size:.9em}
+.note{border-left:3px solid var(--warm);padding:4px 0 4px 14px;margin:18px 0}
+footer{border-top:1px solid var(--line);margin-top:64px;padding-top:20px;color:var(--muted);font-size:14px}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+<header>
+<p class="eyebrow">EEE mini project · RGUKT Nuzvid · 2026</p>
+<h1>QAOA-Based Economic Load Dispatch Using QUBO Formulation</h1>
+<p class="muted">J. Karthikeya, A. Krishna Chaitanya, N. Ramesh, M. Harika · Guide: B. Madhusudhan Rao</p>
+<p>We wrote the economic load dispatch of the 6-bus, 3-generator Wood–Wollenberg system as a 12-qubit
+QUBO and solved it with the Quantum Approximate Optimization Algorithm for all 12 periods of a daily load
+profile. We compared it with standard algorithms, ran it on a real IBM quantum processor, and checked
+every dispatch with an AC load flow.</p>
+<div class="links">
+<a href="https://github.com/Karthik73965/eld-qaoa">Code on GitHub</a>
+<a href="https://github.com/Karthik73965/eld-qaoa/blob/main/report/main.pdf">Project report (PDF)</a>
+<a href="https://github.com/Karthik73965/eld-qaoa/blob/main/paper/main.pdf">IEEE paper (PDF)</a>
+<a href="https://github.com/Karthik73965/eld-qaoa/blob/main/docs/SOURCES.md">Data sources</a>
+</div>
+<div class="stats">
+<div class="stat"><b>0.040%</b><span>worst cost gap vs the SLSQP optimum, over 12 periods</span></div>
+<div class="stat"><b>12 / 12</b><span>periods where QAOA sampled the exact QUBO optimum</span></div>
+<div class="stat"><b>10.2×</b><span>mean gain over random sampling at depth p = 4 (max 31×)</span></div>
+<div class="stat"><b>100%</b><span>success over 240 runs, against 92.5% for simulated annealing</span></div>
+</div>
+</header>
+
+<h2>Method</h2>
+<div class="pipe"><span>6-bus data</span>→<span>4-bit encoding</span>→<span>QUBO, A = 20</span>→<span>Ising H</span>→<span class="q">CVaR-QAOA</span>→<span>4096 shots</span>→<span>refine top 5</span>→<span>AC check</span></div>
+<p>Each generator output is encoded with 4 bits (steps of 10, 7.5 and 9 MW), so the unit limits hold by
+construction. Power balance becomes a quadratic penalty with weight A = 20, the smallest value in a sweep
+that keeps the QUBO optimum within 0.5 MW of demand. The substitution x = (1 − Z)/2 gives an Ising
+Hamiltonian with 12 Z terms and 66 ZZ terms.</p>
+<p>The circuit (RZ, RZZ, RX gates, depth p = 1–4) is trained on the CVaR of the energy (α = 0.05) with
+COBYLA and INTERP initialisation. The five lowest-energy sampled dispatches are then refined by SLSQP,
+each unit moving at most one grid step, to meet demand exactly.</p>
+
+<h2>Results</h2>
+<figure><img src="assets/dispatch_by_period.png" alt="Hybrid QAOA dispatch of G1, G2 and G3 for 12 periods, demand 180 to 330 MW." loading="lazy"><figcaption>Hybrid QAOA dispatch for 12 periods. Daily cost $43,173.88 against the optimum of $43,171.05.</figcaption></figure>
+<div class="two">
+<figure><img src="assets/amplification_vs_depth.png" alt="Amplification of the optimal bitstring rising from 4.6 at p=1 to 10.2 at p=4." loading="lazy"><figcaption>The probability of the optimal dispatch rises steadily with depth.</figcaption></figure>
+<figure><img src="assets/cost_gap.png" alt="Cost gap per period for the raw QAOA grid point and the hybrid dispatch." loading="lazy"><figcaption>Raw grid points that look cheaper are under-supplying. Refinement fixes the balance.</figcaption></figure>
+</div>
+
+<h3>Comparison with standard algorithms</h3>
+<p class="muted">240 runs each (20 seeds × 12 periods). Success: within 0.1% of SLSQP and balanced.</p>
+<div class="tablewrap"><table>
+<tr><th>Method</th><th>Mean gap</th><th>Worst gap</th><th>Success</th><th>Time / period</th></tr>
+<tr class="hl"><td>QAOA + refine (12-bit QUBO)</td><td>0.007%</td><td>0.040%</td><td>100%</td><td>0.28 s*</td></tr>
+<tr><td>Exhaustive + refine (same QUBO)</td><td>0.007%</td><td>0.040%</td><td>100%</td><td>10 ms</td></tr>
+<tr><td>Simulated annealing + refine (same QUBO)</td><td>0.029%</td><td>0.437%</td><td>92.5%</td><td>71 ms</td></tr>
+<tr><td>PSO, dependent unit (Gaing 2003)</td><td>0.000%</td><td>0.000%</td><td>100%</td><td>13 ms</td></tr>
+<tr><td>GA, dependent unit</td><td>0.000%</td><td>0.000%</td><td>100%</td><td>80 ms</td></tr>
+<tr><td>PSO, penalty</td><td>0.645%</td><td>2.190%</td><td>13.8%</td><td>10 ms</td></tr>
+<tr><td>GA, penalty</td><td>0.763%</td><td>3.011%</td><td>7.5%</td><td>81 ms</td></tr>
+</table></div>
+<p class="muted" style="font-size:14px">* Simulated sampling, after about 22 s of training per period. SLSQP itself takes about 1 ms.</p>
+<div class="note"><p><b>No speed-up is claimed.</b> Classical solvers handle this small convex problem in milliseconds. The
+project shows that the quantum formulation is correct and that the circuit amplifies good dispatches.
+The QUBO route matters for problems that are binary by nature, such as unit commitment.</p></div>
+
+<h2>Real IBM quantum hardware</h2>
+<p><code>ibm_marrakesh</code> (156-qubit Heron), period 1, p = 1, 4096 shots. At 6 qubits the hardware found the
+optimal dispatch 2.4× more often than random, keeping about 90% of the simulator's gain, and the refined
+dispatch equals the optimum. At 9 qubits, 144 two-qubit gates of noise remove most of the gain.</p>
+<figure><img src="assets/ibm_hardware.png" alt="Bar chart of P(optimal) and P(near-optimal) for random, IBM hardware and simulator at 6 and 9 qubits." loading="lazy"><figcaption>Hardware against the ideal simulator and random sampling.</figcaption></figure>
+
+<h2>Losses and AC load flow</h2>
+<p>With loss coefficients derived from the line data, the hybrid method stays within 0.08% of the
+loss-inclusive optimum. Losses of 2.7–9.2 MW add 2.0% to the daily cost. A Newton–Raphson load flow,
+validated against PYPOWER, confirms voltages (1.009–1.070 pu) and reactive limits. It also shows that
+line T09 (bus 3–6) is overloaded at high load, up to 145% at the peak. The classical optimum overloads
+it in the same way, because ELD ignores line limits.</p>
+<div class="two">
+<figure><img src="assets/losses.png" alt="Losses per period from the B-coefficient formula and the AC load flow." loading="lazy"><figcaption>The loss formula is within 1.5–4.3% of the AC load flow.</figcaption></figure>
+<figure><img src="assets/line_loading.png" alt="Loading of line T09 per period, above 100% in periods 1 and 7 to 12, peak 145%." loading="lazy"><figcaption>Line T09 loading: the main future-work item (security-constrained dispatch).</figcaption></figure>
+</div>
+
+<h2>Reproduce</h2>
+<p>Python 3.11, Qiskit 2.6.2. Clone the repository, run <code>pip install -r requirements.txt</code>, then
+<code>python scripts/run_all.py</code>, <code>run_baselines.py</code>, <code>run_losses.py</code> and
+<code>plots.py</code>. Seeds are fixed. Test-system data: J. F. Prada, PhD thesis, CMU 2017, App. D, with
+MATPOWER <code>case6ww</code>.</p>
+
+<footer>Department of Electrical and Electronics Engineering, RGUKT Nuzvid · Review: 27–28 November 2026</footer>
+</main>
+</body>
+</html>

@@ -59,6 +59,9 @@ classical optimum too, since ELD ignores line limits.
 | `tests/test_validation.py` | SLSQP vs λ, QUBO vs Ising, NR vs PYPOWER, loss formula vs AC |
 | `results/` | CSV/JSON results and figures |
 | `report/` | LaTeX project report (Overleaf-ready) |
+| `paper/` | IEEE conference paper (IEEEtran, Overleaf-ready) |
+| `viva/VIVA_QA.md` | Viva questions and answers |
+| `docs/index.html` | Project website (GitHub Pages, from `/docs`) |
 
 ## Run
 
