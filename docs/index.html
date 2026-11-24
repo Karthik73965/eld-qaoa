@@ -3,133 +3,328 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>QAOA Economic Dispatch</title>
-<meta name="description" content="Economic load dispatch of a 6-bus system solved with QAOA: formulation, results, IBM hardware run and AC validation. EEE mini project, RGUKT Nuzvid.">
+<title>QAOA Economic Load Dispatch</title>
+<meta name="description" content="Can a quantum algorithm schedule power plants at the lowest cost? EEE mini project, RGUKT Nuzvid: economic load dispatch of a 6-bus system solved with QAOA, compared with standard algorithms, run on IBM quantum hardware.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#fbfaf7;--ink:#1d2430;--muted:#5b6472;--line:#e3e0d8;--accent:#2a78d6;--warm:#c2521f;--card:#ffffff}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#11151c;--ink:#e7eaf0;--muted:#a1a9b6;--line:#2a313c;--accent:#6aa8f0;--warm:#f08a5d;--card:#181d26}}
-:root[data-theme="dark"]{--bg:#11151c;--ink:#e7eaf0;--muted:#a1a9b6;--line:#2a313c;--accent:#6aa8f0;--warm:#f08a5d;--card:#181d26}
+:root{
+  --paper:#f4f6f7; --white:#ffffff; --ink:#15212c; --soft:#4d5a67; --rule:#d6dce1;
+  --q:#1f5fbf; --q-tint:#e6eefa; --gen:#d99a00; --gen-tint:#fbf1d8; --ok:#2c7a4b; --warn:#b5481d;
+  --sans:"Archivo",system-ui,sans-serif; --serif:"Source Serif 4",Georgia,serif;
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "IBM Plex Sans",system-ui,sans-serif}
-main{max-width:980px;margin:0 auto;padding:0 16px 80px}
-header{padding:64px 0 32px;border-bottom:1px solid var(--line)}
-.eyebrow{font:600 13px "IBM Plex Mono",monospace;letter-spacing:.08em;color:var(--accent);text-transform:uppercase;margin:0 0 12px}
-h1{font-size:clamp(30px,5vw,46px);line-height:1.15;margin:0 0 16px}
-h2{font-size:26px;margin:56px 0 12px}
-h3{font-size:18px;margin:24px 0 8px}
-p{margin:0 0 14px}
-.muted{color:var(--muted)}
-.links{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
-.links a{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px}
-.links a:hover{border-color:var(--accent)}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:32px 0 0}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
-.stat b{display:block;font:600 30px "IBM Plex Mono",monospace;color:var(--accent)}
-.stat span{color:var(--muted);font-size:14px}
-.pipe{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font:14px "IBM Plex Mono",monospace;margin:14px 0}
-.pipe span{background:var(--card);border:1px solid var(--line);padding:6px 10px;border-radius:6px}
-.pipe span.q{border-color:var(--accent);color:var(--accent);font-weight:600}
-figure{margin:20px 0;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px}
-figure img{width:100%;height:auto;display:block}
-figcaption{color:#5b6472;font-size:14px;margin-top:8px}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media (max-width:720px){.two{grid-template-columns:1fr}}
-.tablewrap{overflow-x:auto}
-table{border-collapse:collapse;width:100%;font-size:15px;margin:12px 0}
-th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--paper);color:var(--ink);font:18px/1.7 var(--serif)}
+a{color:var(--q)}
+a:focus-visible,summary:focus-visible{outline:3px solid var(--q);outline-offset:3px;border-radius:2px}
+h1,h2,h3,.num,.nav,.btn,table,figcaption,.kicker{font-family:var(--sans)}
+h1{font-size:clamp(34px,6vw,64px);line-height:1.04;font-weight:800;font-stretch:88%;letter-spacing:-.02em;margin:0 0 24px;max-width:15ch}
+h2{font-size:clamp(28px,3.6vw,38px);line-height:1.15;font-weight:750;font-stretch:92%;letter-spacing:-.01em;margin:0 0 18px}
+h3{font-size:20px;font-weight:700;margin:32px 0 8px}
+p{margin:0 0 16px;max-width:68ch}
+strong{font-weight:600}
+
+/* hero */
+.hero{background:var(--ink);color:#fff;padding:72px 20px 64px}
+.hero-in{max-width:1120px;margin:0 auto}
+.kicker{font-size:15px;font-weight:600;color:#a9c4ec;margin:0 0 20px}
+.answer{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;max-width:760px;border-left:4px solid var(--gen);padding:6px 0 6px 20px;margin:8px 0 32px}
+.answer b{font-family:var(--sans);font-weight:700;color:var(--gen)}
+.answer span{color:#e7edf3}
+@media (max-width:640px){.answer{grid-template-columns:1fr;gap:2px}.answer span{margin-bottom:12px}}
+.who{font-family:var(--sans);font-size:15px;color:#b9c4cf;margin:0 0 24px}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-block;padding:10px 16px;border-radius:6px;font-weight:600;font-size:15px;text-decoration:none;border:1px solid #3b4b5b;color:#fff}
+.btn.primary{background:var(--gen);border-color:var(--gen);color:var(--ink)}
+.btn:hover{border-color:#fff}
+
+/* layout */
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:56px}
+.nav{position:sticky;top:0;align-self:start;padding:48px 0;font-size:15px}
+.nav ol{list-style:none;margin:0;padding:0;counter-reset:s}
+.nav li{counter-increment:s;margin:0 0 4px}
+.nav a{display:grid;grid-template-columns:28px 1fr;color:var(--soft);text-decoration:none;padding:4px 0}
+.nav a::before{content:counter(s);font-weight:700;color:var(--q)}
+.nav a:hover{color:var(--ink)}
+main{padding:48px 0 40px;min-width:0}
+section{padding:0 0 64px;margin:0 0 56px;border-bottom:1px solid var(--rule)}
+section:last-of-type{border-bottom:0}
+.step{font-family:var(--sans);font-weight:700;color:var(--q);font-size:16px;margin:0 0 6px}
+.lede{font-size:21px;line-height:1.6;color:var(--ink)}
+@media (max-width:900px){.wrap{grid-template-columns:1fr;gap:0}.nav{display:none}}
+
+/* facts */
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);margin:24px 0}
+.facts div{background:var(--white);padding:16px 18px}
+.facts .num{display:block;font-size:28px;font-weight:750;font-stretch:90%;line-height:1.1}
+.facts small{font-family:var(--sans);font-size:14px;color:var(--soft);line-height:1.4;display:block;margin-top:4px}
+@media (max-width:640px){.facts{grid-template-columns:1fr}}
+
+/* tables */
+.tw{overflow-x:auto;margin:20px 0;background:var(--white);border:1px solid var(--rule)}
+table{border-collapse:collapse;width:100%;font-size:15px;font-variant-numeric:tabular-nums}
+th,td{padding:10px 14px;text-align:right;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;color:var(--soft);background:#fafbfc}
 th:first-child,td:first-child{text-align:left}
-th{font-weight:600;color:var(--muted)}
-tr.hl td{font-weight:600}
-code{font-family:"IBM Plex Mono",monospace;font-size:.9em}
-.note{border-left:3px solid var(--warm);padding:4px 0 4px 14px;margin:18px 0}
-footer{border-top:1px solid var(--line);margin-top:64px;padding-top:20px;color:var(--muted);font-size:14px}
-a{color:var(--accent)}
+td.l,th.l{text-align:left}
+tr:last-child td{border-bottom:0}
+tr.ours td{background:var(--q-tint);font-weight:650}
+.why td.l{white-space:normal;min-width:260px;color:var(--soft)}
+td.good{color:var(--ok);font-weight:650}
+td.bad{color:var(--warn);font-weight:650}
+
+/* flow */
+.flow{list-style:none;margin:24px 0;padding:0;counter-reset:f}
+.flow li{counter-increment:f;display:grid;grid-template-columns:44px 1fr;gap:4px 14px;padding:14px 0;border-top:1px solid var(--rule)}
+.flow li::before{content:counter(f);font-family:var(--sans);font-weight:800;font-size:22px;color:var(--soft);grid-row:span 2}
+.flow li.qstep::before{color:var(--q)}
+.flow b{font-family:var(--sans);font-weight:700}
+.flow span{color:var(--soft);font-size:17px}
+.tag{font-family:var(--sans);font-size:13px;font-weight:600;padding:2px 8px;border-radius:4px;margin-left:8px;vertical-align:2px}
+.tag.c{background:#e9ecef;color:var(--soft)}
+.tag.qq{background:var(--q-tint);color:var(--q)}
+
+/* decode: the one bold element */
+.decode{background:var(--white);border:1px solid var(--rule);padding:28px;margin:28px 0}
+.bits{display:flex;flex-wrap:wrap;gap:22px;font-family:var(--sans);font-variant-numeric:tabular-nums}
+.unit{flex:1 1 200px}
+.unit .b{font-size:clamp(36px,5vw,54px);font-weight:800;font-stretch:80%;letter-spacing:.06em;color:var(--q);line-height:1}
+.unit .arrow{font-size:15px;color:var(--soft);margin:10px 0 2px}
+.unit .mw{font-size:28px;font-weight:750;color:var(--ink)}
+.unit .mw i{font-style:normal;display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:8px;vertical-align:2px}
+.unit .calc{font-size:14px;color:var(--soft)}
+.sum{margin-top:22px;padding-top:16px;border-top:1px dashed var(--rule);font-family:var(--sans);font-size:17px}
+.sum b{color:var(--ok)}
+
+/* figures */
+figure{margin:24px 0;background:#fff;border:1px solid var(--rule);padding:14px}
+figure img{width:100%;height:auto;display:block}
+figcaption{font-size:14px;color:var(--soft);margin-top:10px;line-height:1.5}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.pair{grid-template-columns:1fr}}
+
+.callout{background:var(--gen-tint);border-left:4px solid var(--gen);padding:16px 20px;margin:24px 0}
+.callout p:last-child{margin:0}
+.verdict{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:20px 0}
+.verdict div{background:var(--white);border:1px solid var(--rule);border-top:4px solid var(--ok);padding:18px 20px}
+.verdict div.no{border-top-color:var(--warn)}
+.verdict h3{margin:0 0 8px}
+.verdict ul{margin:0;padding-left:20px}
+.verdict li{margin:0 0 8px}
+@media (max-width:760px){.verdict{grid-template-columns:1fr}}
+details{background:var(--white);border:1px solid var(--rule);padding:12px 18px;margin:16px 0}
+summary{font-family:var(--sans);font-weight:650;cursor:pointer}
+footer{background:var(--ink);color:#b9c4cf;font-family:var(--sans);font-size:15px;padding:40px 20px}
+footer .in{max-width:1120px;margin:0 auto}
+footer a{color:#fff}
 </style>
 </head>
 <body>
-<main>
-<header>
-<p class="eyebrow">EEE mini project · RGUKT Nuzvid · 2026</p>
-<h1>QAOA-Based Economic Load Dispatch Using QUBO Formulation</h1>
-<p class="muted">J. Karthikeya, A. Krishna Chaitanya, N. Ramesh, M. Harika · Guide: B. Madhusudhan Rao</p>
-<p>We wrote the economic load dispatch of the 6-bus, 3-generator Wood–Wollenberg system as a 12-qubit
-QUBO and solved it with the Quantum Approximate Optimization Algorithm for all 12 periods of a daily load
-profile. We compared it with standard algorithms, ran it on a real IBM quantum processor, and checked
-every dispatch with an AC load flow.</p>
-<div class="links">
-<a href="https://github.com/Karthik73965/eld-qaoa">Code on GitHub</a>
-<a href="https://github.com/Karthik73965/eld-qaoa/blob/main/report/main.pdf">Project report (PDF)</a>
-<a href="https://github.com/Karthik73965/eld-qaoa/blob/main/paper/main.pdf">IEEE paper (PDF)</a>
-<a href="https://github.com/Karthik73965/eld-qaoa/blob/main/docs/SOURCES.md">Data sources</a>
+
+<header class="hero">
+<div class="hero-in">
+<p class="kicker">EEE mini project, RGUKT Nuzvid, 2026</p>
+<h1>Can a quantum algorithm run power plants at the lowest cost?</h1>
+<div class="answer">
+<b>Question</b><span>Three power plants must supply a city's changing demand. Each costs a different amount to run. How much should each one produce so the total fuel bill is as low as possible?</span>
+<b>What we did</b><span>We rewrote this problem in the form a quantum computer understands and solved it with QAOA, a quantum optimisation algorithm. We tested it on all 12 load periods of a day, compared it with standard algorithms, and ran it on a real IBM quantum computer.</span>
+<b>Answer</b><span>Yes, accurately: within 0.04% of the lowest possible cost in every period, and more reliable than simulated annealing on the same problem. But not faster: on a problem this small, a normal computer is still quicker.</span>
 </div>
-<div class="stats">
-<div class="stat"><b>0.040%</b><span>worst cost gap vs the SLSQP optimum, over 12 periods</span></div>
-<div class="stat"><b>12 / 12</b><span>periods where QAOA sampled the exact QUBO optimum</span></div>
-<div class="stat"><b>10.2×</b><span>mean gain over random sampling at depth p = 4 (max 31×)</span></div>
-<div class="stat"><b>100%</b><span>success over 240 runs, against 92.5% for simulated annealing</span></div>
+<p class="who">J. Karthikeya, A. Krishna Chaitanya, N. Ramesh, M. Harika. Guide: B. Madhusudhan Rao.</p>
+<div class="btns">
+<a class="btn primary" href="https://github.com/Karthik73965/eld-qaoa/blob/main/report/main.pdf">Read the report (PDF)</a>
+<a class="btn" href="https://github.com/Karthik73965/eld-qaoa/blob/main/paper/main.pdf">IEEE paper</a>
+<a class="btn" href="https://github.com/Karthik73965/eld-qaoa">Code and data</a>
+</div>
 </div>
 </header>
 
-<h2>Method</h2>
-<div class="pipe"><span>6-bus data</span>→<span>4-bit encoding</span>→<span>QUBO, A = 20</span>→<span>Ising H</span>→<span class="q">CVaR-QAOA</span>→<span>4096 shots</span>→<span>refine top 5</span>→<span>AC check</span></div>
-<p>Each generator output is encoded with 4 bits (steps of 10, 7.5 and 9 MW), so the unit limits hold by
-construction. Power balance becomes a quadratic penalty with weight A = 20, the smallest value in a sweep
-that keeps the QUBO optimum within 0.5 MW of demand. The substitution x = (1 − Z)/2 gives an Ising
-Hamiltonian with 12 Z terms and 66 ZZ terms.</p>
-<p>The circuit (RZ, RZZ, RX gates, depth p = 1–4) is trained on the CVaR of the energy (α = 0.05) with
-COBYLA and INTERP initialisation. The five lowest-energy sampled dispatches are then refined by SLSQP,
-each unit moving at most one grid step, to meet demand exactly.</p>
+<div class="wrap">
+<nav class="nav" aria-label="Sections">
+<ol>
+<li><a href="#problem">The problem</a></li>
+<li><a href="#approach">Our approach</a></li>
+<li><a href="#qubits">MW into qubits</a></li>
+<li><a href="#qaoa">How QAOA searches</a></li>
+<li><a href="#compare">What we compared</a></li>
+<li><a href="#results">Results</a></li>
+<li><a href="#hardware">Real quantum computer</a></li>
+<li><a href="#network">Network check</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ol>
+</nav>
 
-<h2>Results</h2>
-<figure><img src="assets/dispatch_by_period.png" alt="Hybrid QAOA dispatch of G1, G2 and G3 for 12 periods, demand 180 to 330 MW." loading="lazy"><figcaption>Hybrid QAOA dispatch for 12 periods. Daily cost $43,173.88 against the optimum of $43,171.05.</figcaption></figure>
-<div class="two">
-<figure><img src="assets/amplification_vs_depth.png" alt="Amplification of the optimal bitstring rising from 4.6 at p=1 to 10.2 at p=4." loading="lazy"><figcaption>The probability of the optimal dispatch rises steadily with depth.</figcaption></figure>
-<figure><img src="assets/cost_gap.png" alt="Cost gap per period for the raw QAOA grid point and the hybrid dispatch." loading="lazy"><figcaption>Raw grid points that look cheaper are under-supplying. Refinement fixes the balance.</figcaption></figure>
+<main>
+
+<section id="problem">
+<p class="step">Step 1</p>
+<h2>The problem: economic load dispatch</h2>
+<p class="lede">A power system has several generators running at once. Demand changes through the day, and every MW from each generator has a different fuel cost. <strong>Economic load dispatch (ELD)</strong> decides how many MW each generator should produce so that demand is met at the lowest total cost.</p>
+<p>Two rules must hold. Total generation must equal demand. And each generator must stay between its minimum and maximum output.</p>
+<p>We used the standard <strong>6-bus, 3-generator test system</strong> from Wood &amp; Wollenberg's textbook, with data from Prada's PhD thesis (Carnegie Mellon, 2017). Demand is given for 12 periods of a day.</p>
+<div class="facts">
+<div><span class="num">3</span><small>generators: G1 (50–200 MW), G2 (37.5–150 MW), G3 (45–180 MW)</small></div>
+<div><span class="num">180–330 MW</span><small>demand range over the 12 periods</small></div>
+<div><span class="num">$43,171</span><small>lowest possible total cost for the day (the target to match)</small></div>
 </div>
+<p>Each generator's cost is a quadratic, C = aP² + bP + c ($/h). G2 is the cheapest per MW and G1 the most expensive, so the best plan leans on G2 and G3 and keeps G1 low.</p>
+</section>
 
-<h3>Comparison with standard algorithms</h3>
-<p class="muted">240 runs each (20 seeds × 12 periods). Success: within 0.1% of SLSQP and balanced.</p>
-<div class="tablewrap"><table>
-<tr><th>Method</th><th>Mean gap</th><th>Worst gap</th><th>Success</th><th>Time / period</th></tr>
-<tr class="hl"><td>QAOA + refine (12-bit QUBO)</td><td>0.007%</td><td>0.040%</td><td>100%</td><td>0.28 s*</td></tr>
-<tr><td>Exhaustive + refine (same QUBO)</td><td>0.007%</td><td>0.040%</td><td>100%</td><td>10 ms</td></tr>
-<tr><td>Simulated annealing + refine (same QUBO)</td><td>0.029%</td><td>0.437%</td><td>92.5%</td><td>71 ms</td></tr>
-<tr><td>PSO, dependent unit (Gaing 2003)</td><td>0.000%</td><td>0.000%</td><td>100%</td><td>13 ms</td></tr>
-<tr><td>GA, dependent unit</td><td>0.000%</td><td>0.000%</td><td>100%</td><td>80 ms</td></tr>
-<tr><td>PSO, penalty</td><td>0.645%</td><td>2.190%</td><td>13.8%</td><td>10 ms</td></tr>
-<tr><td>GA, penalty</td><td>0.763%</td><td>3.011%</td><td>7.5%</td><td>81 ms</td></tr>
+<section id="approach">
+<p class="step">Step 2</p>
+<h2>Our approach in six steps</h2>
+<p class="lede">Quantum computers work with bits (qubits), not with MW values. So we turned the dispatch problem into a yes/no problem, let QAOA search it, then converted the answer back to MW and checked it.</p>
+<ol class="flow">
+<li><b>Load the test system<span class="tag c">classical</span></b><span>Generator costs and limits, demand for each period, line data.</span></li>
+<li><b>Encode MW as bits<span class="tag c">classical</span></b><span>4 bits per generator, 12 bits in total. Each bit pattern is one possible dispatch.</span></li>
+<li><b>Write one cost formula (QUBO)<span class="tag c">classical</span></b><span>Fuel cost plus a penalty that grows if total generation misses the demand.</span></li>
+<li class="qstep"><b>Search with QAOA<span class="tag qq">quantum</span></b><span>A 12-qubit circuit is trained to make low-cost dispatches likely, then measured 4096 times.</span></li>
+<li><b>Decode and fine-tune<span class="tag c">classical</span></b><span>Take the 5 best measured dispatches and adjust each slightly so supply equals demand exactly.</span></li>
+<li><b>Check<span class="tag c">classical</span></b><span>Compare with the exact answer and with other algorithms, then test the dispatch on the full electrical network.</span></li>
+</ol>
+</section>
+
+<section id="qubits">
+<p class="step">Step 3</p>
+<h2>Turning megawatts into qubits</h2>
+<p class="lede">Each generator gets 4 bits, which gives 16 output levels between its minimum and maximum. Three generators need 12 bits, so there are 2¹² = <strong>4096 possible dispatches</strong>. Here is one of them, decoded:</p>
+<div class="decode" aria-label="Example: bits 0010 0111 0101 decode to 70, 90 and 90 MW, total 250 MW">
+<div class="bits">
+<div class="unit"><div class="b">0010</div><div class="arrow">level 2 of 15, steps of 10 MW</div><div class="mw"><i style="background:#2a78d6"></i>G1 = 70 MW</div><div class="calc">50 + 2 × 10</div></div>
+<div class="unit"><div class="b">0111</div><div class="arrow">level 7 of 15, steps of 7.5 MW</div><div class="mw"><i style="background:#e8693a"></i>G2 = 90 MW</div><div class="calc">37.5 + 7 × 7.5</div></div>
+<div class="unit"><div class="b">0101</div><div class="arrow">level 5 of 15, steps of 9 MW</div><div class="mw"><i style="background:#1aab78"></i>G3 = 90 MW</div><div class="calc">45 + 5 × 9</div></div>
+</div>
+<div class="sum">Total 250 MW, equal to the period 1 demand of 250 MW: <b>balanced</b>. The algorithm must find which of the 4096 patterns is also the cheapest.</div>
+</div>
+<p>Because every pattern decodes to a value inside the generator's limits, the limits never need checking. Only the demand rule needs handling. We add a penalty, <em>A × (total − demand)²</em>, to the fuel cost, so a dispatch that misses the demand looks expensive.</p>
+<p>The penalty weight matters. Too small, and the cheapest pattern under-supplies the city. Too large, and cost differences get drowned out. We tried A = 1, 5, 20 and 100 on all 12 periods. <strong>A = 20</strong> was the smallest value that kept the mismatch within 0.5 MW.</p>
+<details><summary>For the technically curious: QUBO and Ising form</summary>
+<p>The cost-plus-penalty formula is a QUBO (quadratic unconstrained binary optimisation). Substituting x = (1 − Z)/2 gives an Ising Hamiltonian with 12 single-qubit Z terms and 66 two-qubit ZZ terms. Its lowest-energy state is the cheapest balanced dispatch. We checked that the two forms agree on all 4096 patterns.</p>
+</details>
+</section>
+
+<section id="qaoa">
+<p class="step">Step 4</p>
+<h2>How QAOA searches the 4096 dispatches</h2>
+<p class="lede">QAOA (Quantum Approximate Optimization Algorithm) starts with all 4096 dispatches equally likely. It then applies layers of quantum gates that raise the chance of measuring cheap, balanced dispatches and lower the chance of bad ones.</p>
+<ol class="flow">
+<li class="qstep"><b>Start equal</b><span>Every qubit is put in superposition, so all 4096 dispatches have the same 1-in-4096 chance.</span></li>
+<li class="qstep"><b>Apply layers</b><span>Each layer has a cost part (built from our formula) and a mixing part. We used 1 to 4 layers, called the depth p.</span></li>
+<li><b>Tune the angles</b><span>A classical optimiser (COBYLA) adjusts each layer's two angles to focus probability on the best 5% of outcomes (CVaR training).</span></li>
+<li class="qstep"><b>Measure 4096 times</b><span>Each measurement gives one dispatch. Good dispatches now come up far more often than chance.</span></li>
+<li><b>Fine-tune the best five</b><span>The 4-bit levels are 7.5–10 MW apart, so the best pattern rarely hits demand exactly. A classical solver (SLSQP) moves each generator by at most one step to balance supply and demand exactly.</span></li>
+</ol>
+<div class="callout"><p><strong>Is the fine-tuning doing all the work?</strong> No. It can only move one step from where QAOA landed, so if QAOA picks the wrong region, the answer stays wrong. To keep the comparison fair, we gave exactly the same fine-tuning to the other methods that search the same 4096 patterns.</p></div>
+</section>
+
+<section id="compare">
+<p class="step">Step 5</p>
+<h2>What we compared against, and why</h2>
+<p class="lede">An accuracy number means little alone, so we compared QAOA with the exact answer and with the standard algorithms used for ELD. Each random method was run 20 times per period: 240 runs in total.</p>
+<div class="tw"><table class="why">
+<tr><th class="l">Method</th><th class="l">What it is</th><th class="l">Why it is in the comparison</th></tr>
+<tr><td>SLSQP</td><td class="l">Exact mathematical solver (SciPy)</td><td class="l">Gives the true lowest cost. Everything is measured against it.</td></tr>
+<tr><td>λ-iteration</td><td class="l">Textbook equal-incremental-cost method</td><td class="l">Independent check that SLSQP's answer is right.</td></tr>
+<tr><td>Exhaustive search</td><td class="l">Tries all 4096 bit patterns</td><td class="l">The best any method can do on the same 12-bit problem.</td></tr>
+<tr><td>Simulated annealing (SA)</td><td class="l">Classical search on the same bit patterns</td><td class="l">The fairest rival: same problem, same 4096-try budget, same fine-tuning.</td></tr>
+<tr><td>PSO and GA</td><td class="l">Particle swarm and genetic algorithm</td><td class="l">The most common heuristics in ELD papers. Tested with a plain penalty and with the dependent-generator method (Gaing, 2003).</td></tr>
 </table></div>
-<p class="muted" style="font-size:14px">* Simulated sampling, after about 22 s of training per period. SLSQP itself takes about 1 ms.</p>
-<div class="note"><p><b>No speed-up is claimed.</b> Classical solvers handle this small convex problem in milliseconds. The
-project shows that the quantum formulation is correct and that the circuit amplifies good dispatches.
-The QUBO route matters for problems that are binary by nature, such as unit commitment.</p></div>
+<p><strong>A run counts as a success</strong> if its cost is within 0.1% of the true lowest cost and supply equals demand.</p>
+</section>
 
-<h2>Real IBM quantum hardware</h2>
-<p><code>ibm_marrakesh</code> (156-qubit Heron), period 1, p = 1, 4096 shots. At 6 qubits the hardware found the
-optimal dispatch 2.4× more often than random, keeping about 90% of the simulator's gain, and the refined
-dispatch equals the optimum. At 9 qubits, 144 two-qubit gates of noise remove most of the gain.</p>
-<figure><img src="assets/ibm_hardware.png" alt="Bar chart of P(optimal) and P(near-optimal) for random, IBM hardware and simulator at 6 and 9 qubits." loading="lazy"><figcaption>Hardware against the ideal simulator and random sampling.</figcaption></figure>
+<section id="results">
+<p class="step">Step 6</p>
+<h2>Results</h2>
 
-<h2>Losses and AC load flow</h2>
-<p>With loss coefficients derived from the line data, the hybrid method stays within 0.08% of the
-loss-inclusive optimum. Losses of 2.7–9.2 MW add 2.0% to the daily cost. A Newton–Raphson load flow,
-validated against PYPOWER, confirms voltages (1.009–1.070 pu) and reactive limits. It also shows that
-line T09 (bus 3–6) is overloaded at high load, up to 145% at the peak. The classical optimum overloads
-it in the same way, because ELD ignores line limits.</p>
-<div class="two">
-<figure><img src="assets/losses.png" alt="Losses per period from the B-coefficient formula and the AC load flow." loading="lazy"><figcaption>The loss formula is within 1.5–4.3% of the AC load flow.</figcaption></figure>
-<figure><img src="assets/line_loading.png" alt="Loading of line T09 per period, above 100% in periods 1 and 7 to 12, peak 145%." loading="lazy"><figcaption>Line T09 loading: the main future-work item (security-constrained dispatch).</figcaption></figure>
+<h3>Is the answer correct?</h3>
+<p>Yes. QAOA found the best bit pattern in all 12 periods. After fine-tuning, every period meets demand exactly. The largest cost difference from the true optimum is 0.040% ($1.18/h in period 5). Over the whole day, the QAOA plan costs <strong>$43,173.88 against the optimum of $43,171.05</strong>, just $2.83 more.</p>
+<figure><img src="assets/dispatch_by_period.png" alt="Stacked bars of G1, G2 and G3 output for 12 periods, demand from 180 to 330 MW." loading="lazy"><figcaption>How QAOA shared the demand among the three generators in each period. G1, the most expensive, stays at its 50 MW minimum when demand is low.</figcaption></figure>
+<p>That small gap is not QAOA's fault. Checking all 4096 patterns with the same fine-tuning gives exactly the same cost. The gap comes from the 4-bit step size.</p>
+
+<h3>Did the quantum part actually help?</h3>
+<p>Yes. With random guessing, the best pattern comes up 1 time in 4096. After training, QAOA measured it <strong>4.6 times more often at depth 1, rising to 10.2 times at depth 4</strong> (up to 31 times in period 4). A fifth of all measurements (20.4%) were near-optimal, against 3.1% for random guessing.</p>
+<div class="pair">
+<figure><img src="assets/amplification_vs_depth.png" alt="Line chart: gain over random rises from 4.6 at depth 1 to 10.2 at depth 4." loading="lazy"><figcaption>More layers, more gain: the chance of the best dispatch rises steadily with depth.</figcaption></figure>
+<figure><img src="assets/p_good.png" alt="Bar chart of the chance one measurement is near-optimal, 20.4 percent for QAOA against 3.1 percent random." loading="lazy"><figcaption>Chance that a single measurement is a usable, near-optimal dispatch.</figcaption></figure>
 </div>
 
-<h2>Reproduce</h2>
-<p>Python 3.11, Qiskit 2.6.2. Clone the repository, run <code>pip install -r requirements.txt</code>, then
-<code>python scripts/run_all.py</code>, <code>run_baselines.py</code>, <code>run_losses.py</code> and
-<code>plots.py</code>. Seeds are fixed. Test-system data: J. F. Prada, PhD thesis, CMU 2017, App. D, with
-MATPOWER <code>case6ww</code>.</p>
+<h3>How does it compare with the other algorithms?</h3>
+<div class="tw"><table>
+<tr><th>Method</th><th>Average gap</th><th>Worst gap</th><th>Success (240 runs)</th><th>Time per period</th></tr>
+<tr class="ours"><td>QAOA + fine-tune (ours)</td><td>0.007%</td><td>0.040%</td><td class="good">100%</td><td>0.28 s*</td></tr>
+<tr><td>Exhaustive search + fine-tune</td><td>0.007%</td><td>0.040%</td><td class="good">100%</td><td>10 ms</td></tr>
+<tr><td>Simulated annealing + fine-tune</td><td>0.029%</td><td>0.437%</td><td>92.5%</td><td>71 ms</td></tr>
+<tr><td>PSO, dependent generator</td><td>0.000%</td><td>0.000%</td><td class="good">100%</td><td>13 ms</td></tr>
+<tr><td>GA, dependent generator</td><td>0.000%</td><td>0.000%</td><td class="good">100%</td><td>80 ms</td></tr>
+<tr><td>PSO, penalty</td><td>0.645%</td><td>2.190%</td><td class="bad">13.8%</td><td>10 ms</td></tr>
+<tr><td>GA, penalty</td><td>0.763%</td><td>3.011%</td><td class="bad">7.5%</td><td>81 ms</td></tr>
+</table></div>
+<p style="font-size:15px;color:var(--soft)">* On a laptop simulator, after about 22 s of training per period. SLSQP solves a period in about 1 ms.</p>
+<figure><img src="assets/baselines_success.png" alt="Horizontal bars of success rate: QAOA, exhaustive, PSO and GA dependent 100 percent, SA 92.5, PSO penalty 13.8, GA penalty 7.5." loading="lazy"><figcaption>Success rate of each method over 240 runs.</figcaption></figure>
+<p><strong>What this shows.</strong> On the same 12-bit problem with the same budget, QAOA matched exhaustive search every time, while simulated annealing missed in 7.5% of runs. PSO and GA reach the exact optimum when they use the dependent-generator method, because they are not limited to 4-bit steps. With a plain penalty they often stop at a worse answer. Every classical method is faster than simulated QAOA.</p>
+</section>
 
-<footer>Department of Electrical and Electronics Engineering, RGUKT Nuzvid · Review: 27–28 November 2026</footer>
+<section id="hardware">
+<p class="step">Step 7</p>
+<h2>On a real IBM quantum computer</h2>
+<p class="lede">We ran period 1 on <strong>ibm_marrakesh</strong>, a 156-qubit IBM processor, with 4096 measurements. Real hardware is noisy, so we tested a smaller 6-qubit version (2 bits per generator) and a 9-qubit version (3 bits per generator).</p>
+<div class="tw"><table>
+<tr><th>Version</th><th>Two-qubit gates</th><th>Best dispatch: random</th><th>Real hardware</th><th>Ideal simulator</th><th>Final cost gap</th></tr>
+<tr><td>6 qubits</td><td>46</td><td>1.56%</td><td class="good">3.69%</td><td>4.11%</td><td>0.000%</td></tr>
+<tr><td>9 qubits</td><td>144</td><td>0.20%</td><td>0.24%</td><td>0.53%</td><td>0.254%</td></tr>
+</table></div>
+<figure><img src="assets/ibm_hardware.png" alt="Bar chart comparing random, IBM hardware and simulator probabilities for 6 and 9 qubits." loading="lazy"><figcaption>At 6 qubits the real machine kept about 90% of the ideal gain and reached the exact optimum. At 9 qubits, noise from 144 two-qubit gates removed most of it.</figcaption></figure>
+</section>
+
+<section id="network">
+<p class="step">Step 8</p>
+<h2>Checking the plan on the real network</h2>
+<p class="lede">Basic ELD ignores the transmission lines. So we added line losses to the problem and tested every dispatch with a full AC load flow (Newton–Raphson), the same check a utility would run.</p>
+<div class="facts">
+<div><span class="num">2.0%</span><small>extra daily cost due to losses of 2.7–9.2 MW</small></div>
+<div><span class="num">0.08%</span><small>worst gap of QAOA from the optimum with losses included</small></div>
+<div><span class="num">4</span><small>Newton–Raphson iterations to converge, every time. Our solver matches PYPOWER exactly.</small></div>
+</div>
+<p>Voltages (1.009–1.070 pu) and reactive power stay within limits. But the load flow found a real problem: <strong>line T09, from bus 3 to bus 6, is overloaded</strong> in periods 1 and 7–12, reaching 145% of its rating at the 330 MW peak.</p>
+<div class="pair">
+<figure><img src="assets/losses.png" alt="Losses per period from the loss formula and from the AC load flow." loading="lazy"><figcaption>The loss formula agrees with the AC load flow to within 1.5–4.3%.</figcaption></figure>
+<figure><img src="assets/line_loading.png" alt="Loading of line T09 by period, above 100 percent in periods 1 and 7 to 12, peak 145 percent." loading="lazy"><figcaption>Line T09 loading. Orange bars are above the 60 MVA rating.</figcaption></figure>
+</div>
+<div class="callout"><p>The exact classical optimum overloads T09 in the same way (142.7% at the peak). The cause is ELD itself, which does not model line limits, not QAOA. Fixing it needs security-constrained dispatch, our main future-work item.</p></div>
+</section>
+
+<section id="conclusion">
+<p class="step">Step 9</p>
+<h2>What we conclude</h2>
+<div class="verdict">
+<div><h3>What we showed</h3><ul>
+<li>ELD can be written as a 12-qubit problem and solved with QAOA.</li>
+<li>The QAOA plan is within 0.04% of the lowest cost in all 12 periods.</li>
+<li>It is more reliable than simulated annealing on the same problem: 100% against 92.5%.</li>
+<li>The quantum circuit makes the best dispatch up to 31 times more likely than chance.</li>
+<li>It works on a real IBM quantum computer at 6 qubits.</li>
+</ul></div>
+<div class="no"><h3>What we did not show</h3><ul>
+<li>A speed-up. A normal solver takes 1 ms; simulated QAOA takes about 22 s.</li>
+<li>Large problems on real hardware. Noise takes over at 9 qubits.</li>
+<li>A network-safe dispatch. Line limits need security-constrained dispatch.</li>
+</ul></div>
+</div>
+<p>For a small, smooth problem like this one, classical methods remain the right tool. QAOA is promising for problems that are yes/no by nature, such as <strong>unit commitment</strong> (deciding which plants to switch on), where classical methods slow down sharply as systems grow. That, with larger IEEE test systems and error mitigation on hardware, is the next step.</p>
+</section>
+
 </main>
+</div>
+
+<footer>
+<div class="in">
+<p>Department of Electrical and Electronics Engineering, RGUKT Nuzvid. Project review: 27–28 November 2026.</p>
+<p>Data: J. F. Prada, PhD thesis, Carnegie Mellon University, 2017, App. D; MATPOWER case6ww. Every value is traced in <a href="https://github.com/Karthik73965/eld-qaoa/blob/main/docs/SOURCES.md">SOURCES.md</a>. Built with Python 3.11, Qiskit 2.6.2 and SciPy.</p>
+</div>
+</footer>
+
 </body>
 </html>
